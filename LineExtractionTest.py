@@ -7,6 +7,8 @@ from skimage.feature import canny
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from skimage import measure
+from skimage import morphology
+from skimage.morphology import disk
 from skimage.feature import corner_harris, corner_subpix, corner_peaks
 
 from PIL import Image
@@ -234,12 +236,14 @@ def extract_segment(path):
     gray = np.asarray(img.convert('L'))
     threshold = 96
     thresholdedData = (gray > threshold) * 255
+    thresholdedData = morphology_test(thresholdedData)
+    thresholdedData = removeSmallObject(thresholdedData)
     lines = lsd(thresholdedData)
     fig, ax = plt.subplots()  # figsize=(15, 15))
-    ax.imshow(thresholdedData, interpolation='nearest', cmap=plt.cm.gray)
+    ax.imshow(img, interpolation='nearest', cmap=plt.cm.gray)
     # thick_lines = get_thick_lines(lines)
     thick_lines = filter_thick_lines(lines, thresholdedData, 20)
-    thick_lines = lines
+    # thick_lines = lines
     for i in range(thick_lines.shape[0]):
         p0, p1 = (int(thick_lines[i, 0]), int(thick_lines[i, 1])), (int(thick_lines[i, 2]), int(thick_lines[i, 3]))
         width = thick_lines[i, 4]
@@ -250,6 +254,17 @@ def extract_segment(path):
     plt.show()
     csv_path = path.split('.')[0] + '.csv'
     write_csv(csv_path, np.ndarray.tolist(thick_lines))
+
+
+def removeSmallObject(img, minSize=500):
+    cleanedImg = morphology.remove_small_holes(img, min_size=minSize)
+    return np.asarray(cleanedImg, np.int8) * 255
+
+def morphology_test(img):
+    selem = disk(4)
+    cleanedImg = morphology.closing(img, selem)
+    return cleanedImg
+
 
 
 # Constructing test image
