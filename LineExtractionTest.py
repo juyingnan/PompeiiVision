@@ -186,7 +186,7 @@ def get_correct_position(x, y, img):
 
 
 def filter_thick_lines(lines, img, thickness):
-    thickness_threshold = 0.9
+    thickness_threshold = 0.5
     filtered_lines = []
     for line in lines:
         slope = calculate_slope(line)
@@ -209,6 +209,15 @@ def filter_thick_lines(lines, img, thickness):
         aver_0 = 1.0 * sum(pixel_list_0) / len(pixel_list_0)
         aver_1 = 1.0 * sum(pixel_list_1) / len(pixel_list_1)
         if (aver_0 < thickness * thickness_threshold or aver_1 < thickness * thickness_threshold):
+            if aver_0 < aver_1:
+                index = 1
+            else:
+                index = -1
+            line[0] += thickness / 1 * portion * index
+            line[2] += thickness / 1 * portion * index
+            line[1] += thickness / 1 * portion * p_slope * index
+            line[3] += thickness / 1 * portion * p_slope * index
+
             filtered_lines.append(line)
             # filtered_lines.append(
             #     [pixel_position_list_0[0][0],
@@ -232,17 +241,18 @@ def write_csv(path, lines):
 
 
 def extract_segment(path):
-    img = Image.open(path)
+    img = Image.open(path).transpose(Image.FLIP_TOP_BOTTOM)
+    # img = img.resize((1160, 1636), Image.NEAREST)
     gray = np.asarray(img.convert('L'))
     threshold = 96
     thresholdedData = (gray > threshold) * 255
     thresholdedData = morphology_test(thresholdedData)
-    thresholdedData = removeSmallObject(thresholdedData)
+    thresholdedData = removeSmallObject(thresholdedData, minSize=1000)
     lines = lsd(thresholdedData)
     fig, ax = plt.subplots()  # figsize=(15, 15))
-    ax.imshow(img, interpolation='nearest', cmap=plt.cm.gray)
+    # ax.imshow(img, interpolation='nearest', cmap=plt.cm.gray)
     # thick_lines = get_thick_lines(lines)
-    thick_lines = filter_thick_lines(lines, thresholdedData, 20)
+    thick_lines = filter_thick_lines(lines, thresholdedData, 2)
     # thick_lines = lines
     for i in range(thick_lines.shape[0]):
         p0, p1 = (int(thick_lines[i, 0]), int(thick_lines[i, 1])), (int(thick_lines[i, 2]), int(thick_lines[i, 3]))
@@ -260,15 +270,16 @@ def removeSmallObject(img, minSize=500):
     cleanedImg = morphology.remove_small_holes(img, min_size=minSize)
     return np.asarray(cleanedImg, np.int8) * 255
 
+
 def morphology_test(img):
-    selem = disk(4)
+    selem = disk(1)
     cleanedImg = morphology.closing(img, selem)
     return cleanedImg
 
 
-
 # Constructing test image
-path = r'C:\Users\bunny\Desktop\pompeii\test\test3.png'
+# path = r'C:\Users\bunny\Desktop\pompeii\test\test8.jpg'
+path = r'C:\Users\bunny\Desktop\pompeii\20180821\2 02 02 plan 2.jpg'
 image = io.imread(path, as_grey=True)
 
 # classic_hough_line(image)
