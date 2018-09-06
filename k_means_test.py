@@ -1,12 +1,12 @@
 from sklearn import cluster
-import random
+# import random
 import os
 import shutil
 from skimage import io, transform
 import numpy as np
 
-w = 200
-h = 200
+w = 250
+h = 250
 c = 3
 
 
@@ -27,7 +27,7 @@ def read_img_random(path, total_count):
         img = io.imread(im, as_grey=False)
         if len(img.shape) > 2 and img.shape[2] == 4:
             img = img[:, :, :3]
-        # img = transform.resize(img, (w, h))
+        img = transform.resize(img, (w, h))
         imgs.append(img)
         labels.append(file_name)
         if count % 1 == 0:
@@ -56,7 +56,7 @@ def classify_images(img_root_path, count, cat_list, img_name_list):
         shutil.copy(img_path, folder_path)
 
 
-train_path = r'C:\Users\bunny\Desktop\km\2000/'
+train_path = r'C:\Users\bunny\Desktop\_Training_Data\_Pictures\all/'
 train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
 if len(train_data.shape) == 3:
@@ -74,5 +74,5 @@ k_means.fit(d2_train_data)
 # print(k_means.labels_)
 # print(train_label)
 for k in range(len(k_means.labels_)):
-    print(str(k_means.labels_[k]) + '\t' + train_label[k])
+    print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
 classify_images(train_path, cluster_number, k_means.labels_, train_label)
