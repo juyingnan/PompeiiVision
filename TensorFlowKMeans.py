@@ -3,7 +3,7 @@ import numpy as np
 import pylab as pl
 import os
 import shutil
-from skimage import io
+from skimage import io, transform
 from tensorflow.contrib.factorization.python.ops import clustering_ops
 
 from mpl_toolkits.mplot3d import Axes3D
@@ -12,7 +12,10 @@ from mpl_toolkits.mplot3d import Axes3D
 # variables
 classes = 4  # define number of clusters
 display3D = True
-
+w = 250
+h = 250
+c = 3
+train_path = r'C:\Users\bunny\Desktop\_Training_Data\_Pictures\2nd/'
 
 # -----------------------------------------
 def read_img_random(path, total_count):
@@ -32,7 +35,7 @@ def read_img_random(path, total_count):
         img = io.imread(im, as_grey=False)
         if len(img.shape) > 2 and img.shape[2] == 4:
             img = img[:, :, :3]
-        # img = transform.resize(img, (w, h))
+        img = transform.resize(img, (w, h))
         imgs.append(img)
         labels.append(file_name)
         if count % 1 == 0:
@@ -62,7 +65,6 @@ def classify_images(img_root_path, count, cat_list, img_name_list):
 
 
 # dataset
-train_path = r'C:\Users\bunny\Desktop\km\500/'
 train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
 if len(train_data.shape) == 3:
@@ -79,10 +81,10 @@ col = len(d2_train_data[0])
 
 print("[", row, "x", col, "] sized input")
 
-if display3D is False:
-    for i in range(row):
-        pl.scatter(d2_train_data[i][0], d2_train_data[i][1], c='black')
-    pl.show()
+# if display3D is False:
+#     for i in range(row):
+#         pl.scatter(d2_train_data[i][0], d2_train_data[i][1], c='black')
+#     pl.show()
 
 # -----------------------------------------
 
@@ -134,3 +136,5 @@ for i in predictions:
 
 pl.show()
 classify_images(train_path, classes, result_cat_list, train_label)
+for k in range(len(result_cat_list)):
+    print(str(result_cat_list[k] + 1) + '\t' + train_label[k])
