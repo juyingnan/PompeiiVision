@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
+import csv
 import random
 import shutil
 from skimage import io, transform
@@ -14,10 +15,10 @@ batch_size = 128
 full_length = 200
 display_length = full_length
 channel = 3
-train_path = r'C:\Users\bunny\Desktop\_Training_Data\sub_mean_images\1st/'
+train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
 train_image_count = 1000
 
-classes = 3
+cluster_number = 4
 
 
 class VariationalAutoencoder(object):
@@ -142,8 +143,8 @@ class VariationalAutoencoder(object):
         #     is given.
         # Adding 1e-10 to avoid evaluation of log(0.0)
         reconstr_loss = \
-            -tf.reduce_sum(self.x * tf.log(1e-10 + self.x_reconstr_mean)
-                           + (1 - self.x) * tf.log(1e-10 + 1 - self.x_reconstr_mean),
+            -tf.reduce_sum(self.x * tf.log(1e-7 + self.x_reconstr_mean)
+                           + (1 - self.x) * tf.log(1e-7 + 1 - self.x_reconstr_mean),
                            1)
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence
         ##    between the distribution in latent space induced by the encoder on
@@ -298,7 +299,7 @@ def train_input_fn():
 
 def k_means(dataset):
     model = tf.contrib.learn.KMeansClustering(
-        classes,
+        cluster_number,
         distance_metric=clustering_ops.SQUARED_EUCLIDEAN_DISTANCE,  # SQUARED_EUCLIDEAN_DISTANCE, COSINE_DISTANCE
         initial_clusters=tf.contrib.learn.KMeansClustering.RANDOM_INIT
     )
@@ -310,6 +311,16 @@ def k_means(dataset):
 
     predictions = model.predict(input_fn=predict_input_fn, as_iterable=True)
     return predictions
+
+
+def write_csv(img_name_list, cat_list, path='csv/ae_{0}.csv'.format(cluster_number)):
+    with open(path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow((["NAME", "AE_CAT{0}".format(cluster_number)]))
+        lines = []
+        for i in range(len(img_name_list)):
+            lines.append([img_name_list[i], cat_list[i]])
+        writer.writerows(lines)
 
 
 train_data, train_label = read_img_random(train_path, train_image_count, as_grey=(channel == 1))
@@ -375,10 +386,13 @@ for i in predictions:
     result_cat_list.append(i['cluster_idx'])
     index = index + 1
 
-classify_images(train_path, classes, result_cat_list, train_label)
+classify_images(train_path, cluster_number, result_cat_list, train_label)
 for k in range(len(result_cat_list)):
     print(str(result_cat_list[k] + 1) + '\t' + train_label[k])
+write_csv(train_label, [x + 1 for x in result_cat_list])
 
+import sys
+sys.exit("CUT")
 network_architecture = \
     dict(n_hidden_recog_1=256,  # 1st layer encoder neurons
          n_hidden_recog_2=64,  # 2nd layer encoder neurons

@@ -24,7 +24,10 @@ def read_csv(path):
                 if index >= 0:
                     result[i][index].add(filename)
 
-        return result
+        if len(result) == 1:
+            return result[0]
+        else:
+            return result
 
 
 def write_roman(number):
@@ -78,7 +81,9 @@ def find_best_match_cat4(ref_sets, match_sets):
                             best_match_count = match_count
                             best_match = index_list
                         # print(index_list, match_count)
-    print(best_match, '{0} / {1}'.format(best_match_count, sum([len(set) for set in ref_sets])))
+    max_match_count = count_match([item for ref_set in ref_sets for item in ref_set],
+                                  [item for match_set in match_sets for item in match_set])
+    print(best_match, '{0} / {1}'.format(best_match_count, max_match_count))
     return best_match
 
 
@@ -125,7 +130,10 @@ def find_route(ref_sets, match_sets, match_seq, ref_set_title='ref', matched_set
 csv_path = 'csv/1st_4.csv'
 
 # assign sets and lists
-human_cat, kmeans_cat, ae_cat = read_csv(csv_path)
+# human_cat, kmeans_cat, ae_cat = read_csv(csv_path)
+human_cat = read_csv('csv/human_4.csv')
+kmeans_cat = read_csv('csv/kmeans_4.csv')
+ae_cat = read_csv('csv/ae_4.csv')
 
 # find best match
 human_kmeans_match = find_best_match_cat4(human_cat, kmeans_cat)
