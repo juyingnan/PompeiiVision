@@ -2,7 +2,7 @@ from sklearn import cluster
 # import random
 import os
 import shutil
-from skimage import io, transform, color, exposure
+from skimage import io, transform, color, exposure, segmentation
 import numpy as np
 import csv
 
@@ -93,12 +93,82 @@ def calculate_hue_distribution(img):
     img_hsv = color.rgb2hsv(img)
     hist, bin_centers = exposure.histogram(img_hsv, 20)
     hist_max = max(hist)
-    c = 0.1
-    quantized_hues_number = len([hist_value for hist_value in hist if hist_value > hist_max * c])
+    _c = 0.1
+    quantized_hues_number = len([hist_value for hist_value in hist if hist_value > hist_max * _c])
     # print(quantized_hues_number)
     result = list(hist)
     result.append(quantized_hues_number)
     return result
+
+
+def get_cropped_images(img):
+    index = 0.25
+    _h, _w, _c = img.shape
+    upper_bound = int(_h * index)
+    lower_bound = int(_h * (1 - index))
+    left_bound = int(_w * index)
+    right_bound = int(_w * (1 - index))
+
+    # get up img
+    up_img = img[:upper_bound, :]
+    # get down img
+    down_img = img[lower_bound:, :]
+    # get left img
+    left_img = img[:, :left_bound]
+    # get right img
+    right_img = img[:, right_bound:]
+    # get central img
+    central_img = img[upper_bound:lower_bound, left_bound:right_bound]
+
+    return [up_img, down_img, left_img, right_img, central_img]
+
+
+def calculate_n_max_seg_value(segments, n):
+    flatten_segment = segments.flatten()
+    bin_count_list = list(np.bincount(flatten_segment))
+    for i in range(len(bin_count_list)):
+        bin_count_list[i] = (i, bin_count_list[i])
+    sorted_bin_count_list = sorted(bin_count_list, reverse=True, key=lambda count: count[1])
+    return sorted_bin_count_list[:n]
+
+
+def calculate_seg_mass_center(segments, max_seg_value_list):
+    result = []
+    for seg_value_pair in max_seg_value_list:
+        segment_value, segment_value_count = seg_value_pair
+        seg_x = 0
+        seg_y = 0
+        for i in range(len(segments)):
+            row = segments[i]
+            for j in range(len(row)):
+                if row[j] == segment_value:
+                    seg_x += j
+                    seg_y += i
+        seg_x /= segment_value_count
+        seg_y /= segment_value_count
+
+        seg_variance = 0
+        seg_skewness = 0
+        for i in range(len(segments)):
+            row = segments[i]
+            for j in range(len(row)):
+                if row[j] == segment_value:
+                    seg_variance += (j - seg_x) ** 2 + (i - seg_y) ** 2
+                    seg_skewness += (j - seg_x) ** 3 + (i - seg_y) ** 3
+        seg_variance /= segment_value_count
+        seg_skewness /= segment_value_count
+        result.extend([seg_x, seg_y, seg_variance, seg_skewness])
+    return result
+
+
+def calculate_segmentation_mass_center(img):
+    segments_fz = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
+    max_seg_value_list = calculate_n_max_seg_value(segments_fz, 5)
+    max_seg_mass_center_list = calculate_seg_mass_center(segments_fz, max_seg_value_list)
+    # import matplotlib.pyplot as plt
+    # plt.imshow(segments_fz)
+    # plt.show()
+    return max_seg_mass_center_list
 
 
 def get_color_features(data):
@@ -108,11 +178,30 @@ def get_color_features(data):
         img = data[i]
         result[-1].extend(calculate_average_hue_saturation(img))
         result[-1].extend(calculate_hue_distribution(img))
+
+        # left, right, up, down
+        cropped_imgs = get_cropped_images(img)
+        for cropped_img in cropped_imgs:
+            result[-1].extend(calculate_average_hue_saturation(cropped_img))
+            result[-1].extend(calculate_hue_distribution(cropped_img))
+
     return result
 
 
 def get_composition_features(data):
-    pass
+    result = []
+    for i in range(len(data)):
+        result.append([])
+        img = data[i]
+        result[-1].extend(calculate_segmentation_mass_center(img))
+        # result[-1].extend(calculate_hue_distribution(img))
+
+        # left, right, up, down
+        # cropped_imgs = get_cropped_images(img)
+        # for cropped_img in cropped_imgs:
+        #     result[-1].extend(calculate_average_hue_saturation(cropped_img))
+        #     result[-1].extend(calculate_hue_distribution(cropped_img))
+    return result
 
 
 def get_segment_features(data):
@@ -152,7 +241,7 @@ train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
 
 # d2_train_data = get_raw_pixel_features(train_data)
-d2_train_data = get_features(train_data, color=True, composition=False, segment=False, sift=False)
+d2_train_data = get_features(train_data, color=True, composition=True, segment=False, sift=False)
 
 k_means = cluster.KMeans(n_clusters=cluster_number)
 k_means.fit(d2_train_data)
