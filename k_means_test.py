@@ -2,7 +2,7 @@ from sklearn import cluster
 # import random
 import os
 import shutil
-from skimage import io, transform, color, exposure, segmentation
+from skimage import io, transform, color, exposure, segmentation, feature
 import numpy as np
 import csv
 
@@ -10,6 +10,9 @@ w = 250
 h = 250
 c = 3
 cluster_number = 4
+color_bin_count = 10
+composition_feature_count = 3
+sift_feature_count = 10
 
 
 def read_img_random(path, total_count):
@@ -91,7 +94,7 @@ def calculate_average_hue_saturation(img):
 
 def calculate_hue_distribution(img):
     img_hsv = color.rgb2hsv(img)
-    hist, bin_centers = exposure.histogram(img_hsv, 20)
+    hist, bin_centers = exposure.histogram(img_hsv, color_bin_count)
     hist_max = max(hist)
     _c = 0.1
     quantized_hues_number = len([hist_value for hist_value in hist if hist_value > hist_max * _c])
@@ -165,12 +168,28 @@ def calculate_seg_mass_center(segments, max_seg_value_list):
 
 def calculate_segmentation_mass_center(img):
     segments_fz = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
-    max_seg_value_list = calculate_n_max_seg_value(segments_fz, 3)
+    max_seg_value_list = calculate_n_max_seg_value(segments_fz, composition_feature_count)
     max_seg_mass_center_list = calculate_seg_mass_center(segments_fz, max_seg_value_list)
     # import matplotlib.pyplot as plt
     # plt.imshow(segments_fz)
     # plt.show()
     return max_seg_mass_center_list
+
+
+def calculate_sift(img, n):
+    if len(img.shape) > 2 and img.shape[2] > 1:
+        img = color.rgb2gray(img)
+    detector = feature.CENSURE()
+    detector.detect(img)
+    key_point_list = []
+    for i in range(len(detector.scales)):
+        key_point_list.append((detector.keypoints[i], detector.scales[i]))
+    sorted_key_point_list = sorted(key_point_list, reverse=True, key=lambda count: count[1])
+    # result = [position for key_point in sorted_key_point_list[:n] for position in key_point[0]]
+    result = [key_point[1] for key_point in sorted_key_point_list[:n]]
+    while len(result) < n * 1:
+        result.append(0)
+    return result
 
 
 def get_color_features(data):
@@ -197,9 +216,9 @@ def get_composition_features(data):
         img = data[i]
         result[-1].extend(calculate_segmentation_mass_center(img))
 
-        cropped_imgs = get_cropped_images(img)
-        for cropped_img in cropped_imgs:
-            result[-1].extend(calculate_segmentation_mass_center(cropped_img))
+        # cropped_imgs = get_cropped_images(img)
+        # for cropped_img in cropped_imgs:
+        #     result[-1].extend(calculate_segmentation_mass_center(cropped_img))
 
     return result
 
@@ -209,12 +228,16 @@ def get_segment_features(data):
 
 
 def get_sift_features(data):
-    pass
+    result = []
+    for i in range(len(data)):
+        img = data[i]
+        result.append(calculate_sift(img, sift_feature_count))
+    return result
 
 
 def normalize_features(data, v_max=1.0, v_min=0.0):
     data_array = np.asarray(data, np.float32)
-    mins = 0 #np.min(data_array, axis=0)
+    mins = 0  # np.min(data_array, axis=0)
     maxs = np.max(data_array, axis=0)
     rng = maxs - mins
     result = v_max - ((v_max - v_min) * (maxs - data_array) / rng)
@@ -252,7 +275,7 @@ train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
 
 # d2_train_data = get_raw_pixel_features(train_data)
-d2_train_data = get_features(train_data, color=True, composition=True, segment=False, sift=False)
+d2_train_data = get_features(train_data, color=True, composition=True, segment=False, sift=True)
 
 k_means = cluster.KMeans(n_clusters=cluster_number)
 k_means.fit(d2_train_data)
