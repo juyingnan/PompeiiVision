@@ -165,7 +165,7 @@ def calculate_seg_mass_center(segments, max_seg_value_list):
 
 def calculate_segmentation_mass_center(img):
     segments_fz = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
-    max_seg_value_list = calculate_n_max_seg_value(segments_fz, 5)
+    max_seg_value_list = calculate_n_max_seg_value(segments_fz, 3)
     max_seg_mass_center_list = calculate_seg_mass_center(segments_fz, max_seg_value_list)
     # import matplotlib.pyplot as plt
     # plt.imshow(segments_fz)
@@ -196,13 +196,11 @@ def get_composition_features(data):
         result.append([])
         img = data[i]
         result[-1].extend(calculate_segmentation_mass_center(img))
-        # result[-1].extend(calculate_hue_distribution(img))
 
-        # left, right, up, down
-        # cropped_imgs = get_cropped_images(img)
-        # for cropped_img in cropped_imgs:
-        #     result[-1].extend(calculate_average_hue_saturation(cropped_img))
-        #     result[-1].extend(calculate_hue_distribution(cropped_img))
+        cropped_imgs = get_cropped_images(img)
+        for cropped_img in cropped_imgs:
+            result[-1].extend(calculate_segmentation_mass_center(cropped_img))
+
     return result
 
 
@@ -212,6 +210,15 @@ def get_segment_features(data):
 
 def get_sift_features(data):
     pass
+
+
+def normalize_features(data, v_max=1.0, v_min=0.0):
+    data_array = np.asarray(data, np.float32)
+    mins = 0 #np.min(data_array, axis=0)
+    maxs = np.max(data_array, axis=0)
+    rng = maxs - mins
+    result = v_max - ((v_max - v_min) * (maxs - data_array) / rng)
+    return result
 
 
 def get_features(data, color=True, composition=True, segment=True, sift=True):
@@ -235,6 +242,8 @@ def get_features(data, color=True, composition=True, segment=True, sift=True):
     for feature_result in [color_result, composition_result, segment_result, sift_result]:
         for i in range(len(feature_result)):
             result[i].extend(feature_result[i])
+
+    result = normalize_features(result, v_max=1.0, v_min=0.0)
     return result
 
 
