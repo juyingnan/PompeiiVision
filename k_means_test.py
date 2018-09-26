@@ -6,9 +6,9 @@ from skimage import io, transform, color, exposure, segmentation, feature
 import numpy as np
 import csv
 
-w = 250
-h = 250
-c = 3
+width = 250
+height = 250
+channel = 3
 cluster_number = 4
 color_bin_count = 10
 composition_feature_count = 3
@@ -32,7 +32,7 @@ def read_img_random(path, total_count):
         img = io.imread(im, as_grey=False)
         if len(img.shape) > 2 and img.shape[2] == 4:
             img = img[:, :, :3]
-        img = transform.resize(img, (w, h))
+        img = transform.resize(img, (width, height))
         imgs.append(img)
         labels.append(file_name)
         if count % 1 == 0:
@@ -83,13 +83,19 @@ def get_raw_pixel_features(data):
     return result
 
 
-def calculate_average_hue_saturation(img):
+def calculate_average_hue_saturation(img, h=True, s=True, v=True):
     img_hsv = color.rgb2hsv(img)
     img_h = img_hsv[:, :, 0]
     img_s = img_hsv[:, :, 1]
+    img_v = img_hsv[:, :, 2]
     average_h = img_h.mean()
     average_s = img_s.mean()
-    return [average_h, average_s]
+    average_v = img_v.mean()
+    result = []
+    for pair in [(average_h, h), (average_s, s), (average_v, v)]:
+        if pair[1]:
+            result.append(pair[0])
+    return result
 
 
 def calculate_hue_distribution(img):
@@ -166,6 +172,31 @@ def calculate_seg_mass_center(segments, max_seg_value_list):
     return result
 
 
+def calculate_seg_hsv(img_hsv, segments, max_seg_value_list, h=True, s=True, v=True):
+    result = []
+    for seg_value_pair in max_seg_value_list:
+        segment_value, segment_value_count = seg_value_pair
+        seg_h = 0
+        seg_s = 0
+        seg_v = 0
+        for i in range(len(segments)):
+            row = segments[i]
+            for j in range(len(row)):
+                if row[j] == segment_value:
+                    seg_h += img_hsv[i, j, 0]
+                    seg_s += img_hsv[i, j, 1]
+                    seg_v += img_hsv[i, j, 2]
+        seg_h /= segment_value_count
+        seg_s /= segment_value_count
+        seg_v /= segment_value_count
+
+        for pair in [(seg_h, h), (seg_s, s), (seg_v, v)]:
+            if pair[1]:
+                result.append(pair[0])
+
+    return result
+
+
 def calculate_segmentation_mass_center(img):
     segments_fz = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
     max_seg_value_list = calculate_n_max_seg_value(segments_fz, composition_feature_count)
@@ -192,7 +223,7 @@ def calculate_sift(img, n):
     return result
 
 
-def get_color_features(data):
+def get_global_color_features(data):
     result = []
     for i in range(len(data)):
         result.append([])
@@ -223,8 +254,22 @@ def get_composition_features(data):
     return result
 
 
-def get_segment_features(data):
-    pass
+def get_segment_color_features(data):
+    result = []
+    for i in range(len(data)):
+        result.append([])
+        img = data[i]
+        img = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
+        result[-1].extend(calculate_average_hue_saturation(img, h=True, s=True, v=False))
+        result[-1].extend(calculate_hue_distribution(img))
+
+        # left, right, up, down
+        cropped_imgs = get_cropped_images(img)
+        for cropped_img in cropped_imgs:
+            result[-1].extend(calculate_average_hue_saturation(cropped_img))
+            result[-1].extend(calculate_hue_distribution(cropped_img))
+
+    return result
 
 
 def get_sift_features(data):
@@ -244,7 +289,7 @@ def normalize_features(data, v_max=1.0, v_min=0.0):
     return result
 
 
-def get_features(data, color=True, composition=True, segment=True, sift=True):
+def get_features(data, global_color=True, composition=True, segment_color=True, sift=True):
     result = []
     color_result = []
     composition_result = []
@@ -253,12 +298,12 @@ def get_features(data, color=True, composition=True, segment=True, sift=True):
     for i in range(len(data)):
         result.append([])
 
-    if color:
-        color_result = get_color_features(data)
+    if global_color:
+        color_result = get_global_color_features(data)
     if composition:
         composition_result = get_composition_features(data)
-    if segment:
-        segment_result = get_segment_features(data)
+    if segment_color:
+        segment_result = get_segment_color_features(data)
     if sift:
         sift_result = get_sift_features(data)
 
@@ -275,7 +320,7 @@ train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
 
 # d2_train_data = get_raw_pixel_features(train_data)
-d2_train_data = get_features(train_data, color=True, composition=True, segment=False, sift=True)
+d2_train_data = get_features(train_data, global_color=True, composition=True, segment_color=False, sift=True)
 
 k_means = cluster.KMeans(n_clusters=cluster_number)
 k_means.fit(d2_train_data)
