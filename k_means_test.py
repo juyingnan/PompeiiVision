@@ -257,17 +257,12 @@ def get_composition_features(data):
 def get_segment_color_features(data):
     result = []
     for i in range(len(data)):
-        result.append([])
         img = data[i]
-        img = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
-        result[-1].extend(calculate_average_hue_saturation(img, h=True, s=True, v=False))
-        result[-1].extend(calculate_hue_distribution(img))
-
-        # left, right, up, down
-        cropped_imgs = get_cropped_images(img)
-        for cropped_img in cropped_imgs:
-            result[-1].extend(calculate_average_hue_saturation(cropped_img))
-            result[-1].extend(calculate_hue_distribution(cropped_img))
+        img_seg = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
+        img_hsv = color.rgb2hsv(img)
+        max_seg_value_list = calculate_n_max_seg_value(img_seg, composition_feature_count)
+        result.append(calculate_seg_hsv(img_hsv, segments=img_seg, max_seg_value_list=max_seg_value_list,
+                                        h=True, s=True, v=True))
 
     return result
 
@@ -320,7 +315,7 @@ train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
 
 # d2_train_data = get_raw_pixel_features(train_data)
-d2_train_data = get_features(train_data, global_color=True, composition=True, segment_color=False, sift=True)
+d2_train_data = get_features(train_data, global_color=False, composition=False, segment_color=True, sift=False)
 
 k_means = cluster.KMeans(n_clusters=cluster_number)
 k_means.fit(d2_train_data)
