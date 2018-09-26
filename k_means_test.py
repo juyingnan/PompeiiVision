@@ -102,21 +102,23 @@ def calculate_hue_distribution(img):
 
 
 def get_cropped_images(img):
-    index = 0.25
+    upper_index = 0.35
+    lower_index = 0.2
+    lr_index = 0.2
     _h, _w, _c = img.shape
-    upper_bound = int(_h * index)
-    lower_bound = int(_h * (1 - index))
-    left_bound = int(_w * index)
-    right_bound = int(_w * (1 - index))
+    upper_bound = int(_h * upper_index)
+    lower_bound = int(_h * (1 - lower_index))
+    left_bound = int(_w * lr_index)
+    right_bound = int(_w * (1 - lr_index))
 
     # get up img
     up_img = img[:upper_bound, :]
     # get down img
     down_img = img[lower_bound:, :]
     # get left img
-    left_img = img[:, :left_bound]
+    left_img = img[upper_bound:lower_bound, :left_bound]
     # get right img
-    right_img = img[:, right_bound:]
+    right_img = img[upper_bound:lower_bound, right_bound:]
     # get central img
     central_img = img[upper_bound:lower_bound, left_bound:right_bound]
 
