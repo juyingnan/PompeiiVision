@@ -10,8 +10,8 @@ width = 250
 height = 250
 channel = 3
 cluster_number = 4
-color_bin_count = 10
-composition_feature_count = 3
+color_bin_count = 20
+largest_segment_count = 5
 sift_feature_count = 10
 
 
@@ -199,7 +199,7 @@ def calculate_seg_hsv(img_hsv, segments, max_seg_value_list, h=True, s=True, v=T
 
 def calculate_segmentation_mass_center(img):
     segments_fz = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
-    max_seg_value_list = calculate_n_max_seg_value(segments_fz, composition_feature_count)
+    max_seg_value_list = calculate_n_max_seg_value(segments_fz, largest_segment_count)
     max_seg_mass_center_list = calculate_seg_mass_center(segments_fz, max_seg_value_list)
     # import matplotlib.pyplot as plt
     # plt.imshow(segments_fz)
@@ -260,7 +260,7 @@ def get_segment_color_features(data):
         img = data[i]
         img_seg = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
         img_hsv = color.rgb2hsv(img)
-        max_seg_value_list = calculate_n_max_seg_value(img_seg, composition_feature_count)
+        max_seg_value_list = calculate_n_max_seg_value(img_seg, largest_segment_count)
         result.append(calculate_seg_hsv(img_hsv, segments=img_seg, max_seg_value_list=max_seg_value_list,
                                         h=True, s=True, v=True))
 
@@ -277,7 +277,7 @@ def get_sift_features(data):
 
 def normalize_features(data, v_max=1.0, v_min=0.0):
     data_array = np.asarray(data, np.float32)
-    mins = 0  # np.min(data_array, axis=0)
+    mins = np.min(data_array, axis=0)
     maxs = np.max(data_array, axis=0)
     rng = maxs - mins
     result = v_max - ((v_max - v_min) * (maxs - data_array) / rng)
@@ -315,7 +315,7 @@ train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
 
 # d2_train_data = get_raw_pixel_features(train_data)
-d2_train_data = get_features(train_data, global_color=False, composition=False, segment_color=True, sift=False)
+d2_train_data = get_features(train_data, global_color=True, composition=True, segment_color=True, sift=True)
 
 k_means = cluster.KMeans(n_clusters=cluster_number)
 k_means.fit(d2_train_data)
