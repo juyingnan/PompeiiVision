@@ -371,23 +371,24 @@ def loop_run(data):
                     for co in [True, False]:
                         for sc in [True, False]:
                             for si in [True, False]:
-                                d2_train_data = get_features(data, whole_image_sample=whole, frame_sample=frame,
-                                                             global_color=gc, composition=co,
-                                                             segment_color=sc, sift=si)
+                                if gc or co or sc or si:
+                                    d2_train_data = get_features(data, whole_image_sample=whole, frame_sample=frame,
+                                                                 global_color=gc, composition=co,
+                                                                 segment_color=sc, sift=si)
 
-                                k_means = cluster.KMeans(n_clusters=cluster_number)
-                                k_means.fit(d2_train_data)
-                                # print(k_means.labels_)
-                                # print(train_label)
-                                for k in range(len(k_means.labels_)):
-                                    print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
-                                # classify_images(train_path, cluster_number, k_means.labels_, train_label)
-                                str_format = 100000 * (1 if whole else 0) + 10000 * (1 if frame else 0) + 1000 * (
-                                    1 if gc else 0) + 100 * (1 if co else 0) + 10 * (1 if sc else 0) + 1 * (
-                                                 1 if si else 0)
-                            write_csv(train_label, k_means.labels_ + 1,
-                                      path='csv/kmeans_{0}_{1:06d}.csv'.format(cluster_number, str_format))
-                            print("{0} done".format(str_format))
+                                    k_means = cluster.KMeans(n_clusters=cluster_number)
+                                    k_means.fit(d2_train_data)
+                                    # print(k_means.labels_)
+                                    # print(train_label)
+                                    # for k in range(len(k_means.labels_)):
+                                    #     print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
+                                    # classify_images(train_path, cluster_number, k_means.labels_, train_label)
+                                    str_format = 100000 * (1 if whole else 0) + 10000 * (1 if frame else 0) + 1000 * (
+                                        1 if gc else 0) + 100 * (1 if co else 0) + 10 * (1 if sc else 0) + 1 * (
+                                                     1 if si else 0)
+                                    write_csv(train_label, k_means.labels_ + 1,
+                                              path='csv/kmeans_{0}_{1:06d}.csv'.format(cluster_number, str_format))
+                                    print("{0:06d} done".format(str_format))
 
 
 train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
