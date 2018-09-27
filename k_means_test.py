@@ -223,55 +223,78 @@ def calculate_sift(img, n):
     return result
 
 
-def get_global_color_features(data):
+def get_global_color_features(data, whole_image_sample, frame_sample):
     result = []
     for i in range(len(data)):
         result.append([])
         img = data[i]
-        result[-1].extend(calculate_average_hue_saturation(img))
-        result[-1].extend(calculate_hue_distribution(img))
 
-        # left, right, up, down
-        cropped_imgs = get_cropped_images(img)
-        for cropped_img in cropped_imgs:
-            result[-1].extend(calculate_average_hue_saturation(cropped_img))
-            result[-1].extend(calculate_hue_distribution(cropped_img))
+        if whole_image_sample:
+            result[-1].extend(calculate_average_hue_saturation(img))
+            result[-1].extend(calculate_hue_distribution(img))
+
+        if frame_sample:
+            cropped_imgs = get_cropped_images(img)
+            for cropped_img in cropped_imgs:
+                result[-1].extend(calculate_average_hue_saturation(cropped_img))
+                result[-1].extend(calculate_hue_distribution(cropped_img))
 
     return result
 
 
-def get_composition_features(data):
+def get_composition_features(data, whole_image_sample, frame_sample):
     result = []
     for i in range(len(data)):
         result.append([])
         img = data[i]
-        result[-1].extend(calculate_segmentation_mass_center(img))
 
-        # cropped_imgs = get_cropped_images(img)
-        # for cropped_img in cropped_imgs:
-        #     result[-1].extend(calculate_segmentation_mass_center(cropped_img))
+        if whole_image_sample:
+            result[-1].extend(calculate_segmentation_mass_center(img))
 
-    return result
-
-
-def get_segment_color_features(data):
-    result = []
-    for i in range(len(data)):
-        img = data[i]
-        img_seg = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
-        img_hsv = color.rgb2hsv(img)
-        max_seg_value_list = calculate_n_max_seg_value(img_seg, largest_segment_count)
-        result.append(calculate_seg_hsv(img_hsv, segments=img_seg, max_seg_value_list=max_seg_value_list,
-                                        h=True, s=True, v=True))
+        if frame_sample:
+            cropped_imgs = get_cropped_images(img)
+            for cropped_img in cropped_imgs:
+                result[-1].extend(calculate_segmentation_mass_center(cropped_img))
 
     return result
 
 
-def get_sift_features(data):
+def get_segment_color_features(data, whole_image_sample, frame_sample):
     result = []
     for i in range(len(data)):
+        result.append([])
         img = data[i]
-        result.append(calculate_sift(img, sift_feature_count))
+
+        if whole_image_sample:
+            img_seg = segmentation.felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
+            img_hsv = color.rgb2hsv(img)
+            max_seg_value_list = calculate_n_max_seg_value(img_seg, largest_segment_count)
+            result[-1].extend(calculate_seg_hsv(img_hsv, segments=img_seg, max_seg_value_list=max_seg_value_list,
+                                                h=True, s=True, v=True))
+        if frame_sample:
+            cropped_imgs = get_cropped_images(img)
+            for cropped_img in cropped_imgs:
+                img_seg = segmentation.felzenszwalb(cropped_img, scale=100, sigma=0.5, min_size=50)
+                img_hsv = color.rgb2hsv(cropped_img)
+                max_seg_value_list = calculate_n_max_seg_value(img_seg, largest_segment_count)
+                result[-1].extend(calculate_seg_hsv(img_hsv, segments=img_seg, max_seg_value_list=max_seg_value_list,
+                                                    h=True, s=True, v=True))
+    return result
+
+
+def get_sift_features(data, whole_image_sample, frame_sample):
+    result = []
+    for i in range(len(data)):
+        result.append([])
+        img = data[i]
+
+        if whole_image_sample:
+            result[-1].extend(calculate_sift(img, sift_feature_count))
+
+        if frame_sample:
+            cropped_imgs = get_cropped_images(img)
+            for cropped_img in cropped_imgs:
+                result[-1].extend(calculate_sift(cropped_img, sift_feature_count))
     return result
 
 
@@ -284,7 +307,8 @@ def normalize_features(data, v_max=1.0, v_min=0.0):
     return result
 
 
-def get_features(data, global_color=True, composition=True, segment_color=True, sift=True):
+def get_features(data, whole_image_sample=True, frame_sample=False, global_color=True, composition=True,
+                 segment_color=True, sift=True):
     result = []
     color_result = []
     composition_result = []
@@ -294,13 +318,13 @@ def get_features(data, global_color=True, composition=True, segment_color=True, 
         result.append([])
 
     if global_color:
-        color_result = get_global_color_features(data)
+        color_result = get_global_color_features(data, whole_image_sample, frame_sample)
     if composition:
-        composition_result = get_composition_features(data)
+        composition_result = get_composition_features(data, whole_image_sample, frame_sample)
     if segment_color:
-        segment_result = get_segment_color_features(data)
+        segment_result = get_segment_color_features(data, whole_image_sample, frame_sample)
     if sift:
-        sift_result = get_sift_features(data)
+        sift_result = get_sift_features(data, whole_image_sample, frame_sample)
 
     for feature_result in [color_result, composition_result, segment_result, sift_result]:
         for i in range(len(feature_result)):
@@ -310,18 +334,66 @@ def get_features(data, global_color=True, composition=True, segment_color=True, 
     return result
 
 
+def one_shot_run(data, whole_image_sample=True, frame_sample=False, global_color=True, composition=True,
+                 segment_color=True, sift=True):
+    # d2_train_data = get_raw_pixel_features(train_data)
+    d2_train_data = get_features(data, whole_image_sample=whole_image_sample, frame_sample=frame_sample,
+                                 global_color=global_color, composition=composition, segment_color=segment_color,
+                                 sift=sift)
+
+    k_means = cluster.KMeans(n_clusters=cluster_number)
+    k_means.fit(d2_train_data)
+    # print(k_means.labels_)
+    # print(train_label)
+    for k in range(len(k_means.labels_)):
+        print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
+    classify_images(train_path, cluster_number, k_means.labels_, train_label)
+    write_csv(train_label, k_means.labels_ + 1)
+
+
+def raw_pixel_run():
+    d2_train_data = get_raw_pixel_features(train_data)
+    k_means = cluster.KMeans(n_clusters=cluster_number)
+    k_means.fit(d2_train_data)
+    # print(k_means.labels_)
+    # print(train_label)
+    for k in range(len(k_means.labels_)):
+        print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
+    classify_images(train_path, cluster_number, k_means.labels_, train_label)
+    write_csv(train_label, k_means.labels_ + 1)
+
+
+def loop_run(data):
+    for whole in [True, False]:
+        for frame in [True, False]:
+            if whole or frame:
+                for gc in [True, False]:
+                    for co in [True, False]:
+                        for sc in [True, False]:
+                            for si in [True, False]:
+                                d2_train_data = get_features(data, whole_image_sample=whole, frame_sample=frame,
+                                                             global_color=gc, composition=co,
+                                                             segment_color=sc, sift=si)
+
+                                k_means = cluster.KMeans(n_clusters=cluster_number)
+                                k_means.fit(d2_train_data)
+                                # print(k_means.labels_)
+                                # print(train_label)
+                                for k in range(len(k_means.labels_)):
+                                    print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
+                                # classify_images(train_path, cluster_number, k_means.labels_, train_label)
+                                str_format = 100000 * (1 if whole else 0) + 10000 * (1 if frame else 0) + 1000 * (
+                                    1 if gc else 0) + 100 * (1 if co else 0) + 10 * (1 if sc else 0) + 1 * (
+                                                 1 if si else 0)
+                            write_csv(train_label, k_means.labels_ + 1,
+                                      path='csv/kmeans_{0}_{1:06d}.csv'.format(cluster_number, str_format))
+                            print("{0} done".format(str_format))
+
+
 train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
 train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
-
-# d2_train_data = get_raw_pixel_features(train_data)
-d2_train_data = get_features(train_data, global_color=True, composition=True, segment_color=True, sift=True)
-
-k_means = cluster.KMeans(n_clusters=cluster_number)
-k_means.fit(d2_train_data)
-# print(k_means.labels_)
-# print(train_label)
-for k in range(len(k_means.labels_)):
-    print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
-classify_images(train_path, cluster_number, k_means.labels_, train_label)
-write_csv(train_label, k_means.labels_ + 1)
+loop_run(train_data)
+# one_shot_run(train_data, whole_image_sample=True, frame_sample=False, global_color=True, composition=True,
+#             segment_color=True, sift == True)
+# raw_pixel_run()
