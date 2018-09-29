@@ -399,7 +399,7 @@ def loop_run(data):
 train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
 train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
-loop_run(train_data)
-# one_shot_run(train_data, whole_image_sample=True, frame_sample=False, global_color=True, composition=True,
-#             segment_color=True, sift == True)
+# loop_run(train_data)
+one_shot_run(train_data, whole_image_sample=True, frame_sample=False, global_color=True, composition=True,
+            segment_color=True, sift = True)
 # raw_pixel_run()
