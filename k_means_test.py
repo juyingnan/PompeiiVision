@@ -110,7 +110,7 @@ def calculate_hue_distribution(img):
     return result
 
 
-def get_cropped_images(img):
+def get_cropped_images(img, up=True, down=True, left=True, right=True, center=True):
     upper_index = 0.35
     lower_index = 0.2
     lr_index = 0.2
@@ -130,6 +130,11 @@ def get_cropped_images(img):
     right_img = img[upper_bound:lower_bound, right_bound:]
     # get central img
     central_img = img[upper_bound:lower_bound, left_bound:right_bound]
+
+    result = []
+    for pair in [(up_img, up), (down_img, down), (left_img, left), (right_img, right), (central_img, center)]:
+        if pair[1]:
+            result.append(pair[0])
 
     return [up_img, down_img, left_img, right_img, central_img]
 
