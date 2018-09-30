@@ -1,4 +1,5 @@
 from sklearn import cluster
+# from sklearn.neighbors import kneighbors_graph
 # import random
 import os
 import shutil
@@ -12,7 +13,10 @@ channel = 3
 cluster_number = 4
 color_bin_count = 20
 largest_segment_count = 5
-sift_feature_count = 10
+sift_feature_count = 12
+upper_index = 0.35
+lower_index = 0.2
+lr_index = 0.2
 
 
 def read_img_random(path, total_count):
@@ -49,7 +53,7 @@ def make_dir(path):
         os.makedirs(path)
 
 
-def write_csv(img_name_list, cat_list, path='csv/kmeans_{0}.csv'.format(cluster_number)):
+def write_csv(img_name_list, cat_list, path):
     with open(path, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow((["NAME", "KMEANS_CAT{0}".format(cluster_number)]))
@@ -111,9 +115,6 @@ def calculate_hue_distribution(img):
 
 
 def get_cropped_images(img, up=True, down=True, left=True, right=True, center=True):
-    upper_index = 0.35
-    lower_index = 0.2
-    lr_index = 0.2
     _h, _w, _c = img.shape
     upper_bound = int(_h * upper_index)
     lower_bound = int(_h * (1 - lower_index))
@@ -212,12 +213,13 @@ def calculate_segmentation_mass_center(img):
     return max_seg_mass_center_list
 
 
-def calculate_sift(img, n):
+def calculate_largest_n_sift(img, n):
     if len(img.shape) > 2 and img.shape[2] > 1:
         img = color.rgb2gray(img)
     detector = feature.CENSURE()
     detector.detect(img)
     key_point_list = []
+    # print(len(detector.scales))
     for i in range(len(detector.scales)):
         key_point_list.append((detector.keypoints[i], detector.scales[i]))
     sorted_key_point_list = sorted(key_point_list, reverse=True, key=lambda count: count[1])
@@ -226,6 +228,44 @@ def calculate_sift(img, n):
     while len(result) < n * 1:
         result.append(0)
     return result
+
+
+def calculate_sift_count(img, x):
+    if len(img.shape) > 2 and img.shape[2] > 1:
+        img = color.rgb2gray(img)
+    detector = feature.CENSURE()
+    detector.detect(img)
+    key_point_count = 0
+    # print(len(detector.scales))
+    for i in range(len(detector.scales)):
+        if detector.scales[i] >= x:
+            key_point_count += 1
+    # print(key_point_count)
+    return [key_point_count]
+
+
+def calculate_sift_distribution(img):
+    if len(img.shape) > 2 and img.shape[2] > 1:
+        img = color.rgb2gray(img)
+    detector = feature.CENSURE()
+    detector.detect(img)
+    key_point_distribution = [0, 0, 0, 0, 0]
+    # print(len(detector.scales))
+    for i in range(len(detector.scales)):
+        if detector.keypoints[i][0] <= height * upper_index:
+            key_point_distribution[0] += 1
+        elif detector.keypoints[i][0] >= height * (1 - lower_index):
+            key_point_distribution[1] += 1
+        elif detector.keypoints[i][1] <= width * lr_index:
+            key_point_distribution[2] += 1
+        elif detector.keypoints[i][1] >= width * (1 - lr_index):
+            key_point_distribution[3] += 1
+        else:
+            key_point_distribution[4] += 1
+    # print(key_point_count)
+    if len(detector.scales) > 0:
+        key_point_distribution = [dist / len(detector.scales) for dist in key_point_distribution]
+    return key_point_distribution
 
 
 def get_global_color_features(data, whole_image_sample, frame_sample):
@@ -294,12 +334,44 @@ def get_sift_features(data, whole_image_sample, frame_sample):
         img = data[i]
 
         if whole_image_sample:
-            result[-1].extend(calculate_sift(img, sift_feature_count))
+            result[-1].extend(calculate_largest_n_sift(img, sift_feature_count))
 
         if frame_sample:
             cropped_imgs = get_cropped_images(img)
             for cropped_img in cropped_imgs:
-                result[-1].extend(calculate_sift(cropped_img, sift_feature_count))
+                result[-1].extend(calculate_largest_n_sift(cropped_img, sift_feature_count))
+    return result
+
+
+def get_sift_count_features(data, whole_image_sample, frame_sample, x):
+    result = []
+    for i in range(len(data)):
+        result.append([])
+        img = data[i]
+
+        if whole_image_sample:
+            result[-1].extend(calculate_sift_count(img, x))
+
+        if frame_sample:
+            cropped_imgs = get_cropped_images(img)
+            for cropped_img in cropped_imgs:
+                result[-1].extend(calculate_sift_count(cropped_img, x))
+    return result
+
+
+def get_sift_distribution_features(data, whole_image_sample, frame_sample):
+    result = []
+    for i in range(len(data)):
+        result.append([])
+        img = data[i]
+
+        if whole_image_sample:
+            result[-1].extend(calculate_sift_distribution(img))
+
+        if frame_sample:
+            cropped_imgs = get_cropped_images(img)
+            for cropped_img in cropped_imgs:
+                result[-1].extend(calculate_sift_distribution(cropped_img))
     return result
 
 
@@ -339,33 +411,60 @@ def get_features(data, whole_image_sample=True, frame_sample=False, global_color
     return result
 
 
-def one_shot_run(data, whole_image_sample=True, frame_sample=False, global_color=True, composition=True,
-                 segment_color=True, sift=True):
-    # d2_train_data = get_raw_pixel_features(train_data)
-    d2_train_data = get_features(data, whole_image_sample=whole_image_sample, frame_sample=frame_sample,
-                                 global_color=global_color, composition=composition, segment_color=segment_color,
-                                 sift=sift)
+def get_more_sift_features(data, sift_n_largest=True, sift_count=False, sift_large_count=False,
+                           sift_distribution=False):
+    result = []
+    sift_n_largest_result = []
+    sift_count_result = []
+    sift_large_count_result = []
+    sift_distribution_result = []
+    for i in range(len(data)):
+        result.append([])
 
+    if sift_n_largest:
+        sift_n_largest_result = get_sift_features(data, True, False)
+    if sift_count:
+        sift_count_result = get_sift_count_features(data, True, False, 0)
+    if sift_large_count:
+        sift_large_count_result = get_sift_count_features(data, True, False, 5)
+    if sift_distribution:
+        sift_distribution_result = get_sift_distribution_features(data, True, False)
+
+    for feature_result in [sift_n_largest_result, sift_count_result, sift_large_count_result, sift_distribution_result]:
+        for i in range(len(feature_result)):
+            result[i].extend(feature_result[i])
+
+    result = normalize_features(result, v_max=1.0, v_min=0.0)
+    return result
+
+
+def k_means_clustering(data, path=''):
+    print("Compute K-means clustering...")
     k_means = cluster.KMeans(n_clusters=cluster_number)
-    k_means.fit(d2_train_data)
+    k_means.fit(data)
     # print(k_means.labels_)
     # print(train_label)
     for k in range(len(k_means.labels_)):
         print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
     classify_images(train_path, cluster_number, k_means.labels_, train_label)
-    write_csv(train_label, k_means.labels_ + 1)
+    if path == '':
+        write_csv(train_label, k_means.labels_ + 1, path='csv/kmeans_{0}.csv'.format(cluster_number))
+    else:
+        write_csv(train_label, k_means.labels_ + 1, path=path)
 
 
-def raw_pixel_run():
-    d2_train_data = get_raw_pixel_features(train_data)
-    k_means = cluster.KMeans(n_clusters=cluster_number)
-    k_means.fit(d2_train_data)
-    # print(k_means.labels_)
-    # print(train_label)
-    for k in range(len(k_means.labels_)):
-        print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
-    classify_images(train_path, cluster_number, k_means.labels_, train_label)
-    write_csv(train_label, k_means.labels_ + 1)
+def hierarchical_clustering(data, path=''):
+    print("Compute unstructured hierarchical clustering...")
+    # connectivity = kneighbors_graph(data, n_neighbors=5, include_self=False)
+    ward = cluster.AgglomerativeClustering(n_clusters=cluster_number,  # connectivity=connectivity,
+                                           linkage='ward').fit(data)
+    for k in range(len(ward.labels_)):
+        print(str(ward.labels_[k] + 1) + '\t' + train_label[k])
+    classify_images(train_path, cluster_number, ward.labels_, train_label)
+    if path == '':
+        write_csv(train_label, ward.labels_ + 1, path='csv/hierarchical_{0}.csv'.format(cluster_number))
+    else:
+        write_csv(train_label, ward.labels_ + 1, path=path)
 
 
 def loop_run(data):
@@ -377,29 +476,34 @@ def loop_run(data):
                         for sc in [True, False]:
                             for si in [True, False]:
                                 if gc or co or sc or si:
-                                    d2_train_data = get_features(data, whole_image_sample=whole, frame_sample=frame,
-                                                                 global_color=gc, composition=co,
-                                                                 segment_color=sc, sift=si)
-
-                                    k_means = cluster.KMeans(n_clusters=cluster_number)
-                                    k_means.fit(d2_train_data)
-                                    # print(k_means.labels_)
-                                    # print(train_label)
-                                    # for k in range(len(k_means.labels_)):
-                                    #     print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
-                                    # classify_images(train_path, cluster_number, k_means.labels_, train_label)
+                                    d2_data = get_features(data, whole_image_sample=whole, frame_sample=frame,
+                                                           global_color=gc, composition=co,
+                                                           segment_color=sc, sift=si)
                                     str_format = 100000 * (1 if whole else 0) + 10000 * (1 if frame else 0) + 1000 * (
                                         1 if gc else 0) + 100 * (1 if co else 0) + 10 * (1 if sc else 0) + 1 * (
                                                      1 if si else 0)
-                                    write_csv(train_label, k_means.labels_ + 1,
-                                              path='csv/kmeans_{0}_{1:06d}.csv'.format(cluster_number, str_format))
+                                    k_means_clustering(d2_data,
+                                                       path='csv/kmeans_{0}_{1:06d}.csv'.format(cluster_number,
+                                                                                                str_format))
                                     print("{0:06d} done".format(str_format))
 
 
 train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
 train_image_count = 1000
 train_data, train_label = read_img_random(train_path, train_image_count)
+
+# K-Means
 # loop_run(train_data)
-one_shot_run(train_data, whole_image_sample=True, frame_sample=False, global_color=True, composition=True,
-            segment_color=True, sift = True)
+# one_shot_run(train_data, whole_image_sample=True, frame_sample=False, global_color=False, composition=False,
+# segment_color=False, sift=True)
+# sift_one_shot_run(train_data, sift_n_largest_result=False, sift_count=True, sift_large_count=False,
+#                   sift_distribution=False)
 # raw_pixel_run()
+# d2_train_data = get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=False,
+#                             composition=False, segment_color=False, sift=True)
+# d2_train_data = get_more_sift_features(train_data, sift_n_largest=True, sift_count=False, sift_large_count=False,
+#                                        sift_distribution=False)
+d2_train_data = get_raw_pixel_features(train_data)
+
+k_means_clustering(d2_train_data)
+hierarchical_clustering(d2_train_data)

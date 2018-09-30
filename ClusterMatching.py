@@ -134,10 +134,13 @@ csv_path = 'csv/1st_4.csv'
 human_cat = read_csv('csv/human_4.csv')
 kmeans_cat = read_csv('csv/kmeans_4.csv')
 ae_cat = read_csv('csv/ae_4.csv')
+hierarchical_cat = read_csv('csv/hierarchical_4.csv')
 
 # find best match
 human_kmeans_match = find_best_match_cat4(human_cat, kmeans_cat)
+human_hierarchical_match = find_best_match_cat4(human_cat, hierarchical_cat)
 human_ae_match = find_best_match_cat4(human_cat, ae_cat)
+kmeans_hierarchical_match = find_best_match_cat4(kmeans_cat, hierarchical_cat)
 
 # find route from best match
 print('****************')
@@ -146,6 +149,14 @@ find_route(human_cat, kmeans_cat, human_kmeans_match, "Human", "K-Means", sankey
 print('****************')
 print('human & ae')
 find_route(human_cat, ae_cat, human_ae_match, "Human", "AutoEncoder", sankeymatic_output_format=True)
+print('****************')
+print('kmeans & hierarchical')
+find_route(human_cat, hierarchical_cat, human_hierarchical_match, "Human", "Hierarchical",
+           sankeymatic_output_format=True)
+print('****************')
+print('kmeans & hierarchical')
+find_route(kmeans_cat, hierarchical_cat, kmeans_hierarchical_match, "Kmeans", "Hierarchical",
+           sankeymatic_output_format=True)
 print('****************')
 
 # loop test
