@@ -164,7 +164,7 @@ import os
 
 folder_path = 'csv/'
 file_path_list = [os.path.join(folder_path, file_name) for file_name in os.listdir(folder_path) if
-                  os.path.isfile(os.path.join(folder_path, file_name)) and file_name.startswith('kmeans_4_')]
+                  os.path.isfile(os.path.join(folder_path, file_name)) and (file_name.startswith('kmeans_4_') or file_name.startswith('hierarchical_4_'))]
 for path in file_path_list:
     kmeans_cat = read_csv(path)
     print('r{0} '.format(path), end='')
