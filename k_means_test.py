@@ -438,29 +438,33 @@ def get_more_sift_features(data, sift_n_largest=True, sift_count=False, sift_lar
     return result
 
 
-def k_means_clustering(data, path=''):
+def k_means_clustering(data, path='', log=True, classify_folder=True):
     print("Compute K-means clustering...")
     k_means = cluster.KMeans(n_clusters=cluster_number)
     k_means.fit(data)
-    # print(k_means.labels_)
-    # print(train_label)
-    for k in range(len(k_means.labels_)):
-        print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
-    classify_images(train_path, cluster_number, k_means.labels_, train_label)
+    if log:
+        # print(k_means.labels_)
+        # print(train_label)
+        for k in range(len(k_means.labels_)):
+            print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
+    if classify_folder:
+        classify_images(train_path, cluster_number, k_means.labels_, train_label)
     if path == '':
         write_csv(train_label, k_means.labels_ + 1, path='csv/kmeans_{0}.csv'.format(cluster_number))
     else:
         write_csv(train_label, k_means.labels_ + 1, path=path)
 
 
-def hierarchical_clustering(data, path=''):
+def hierarchical_clustering(data, path='', log=True, classify_folder=True):
     print("Compute unstructured hierarchical clustering...")
     # connectivity = kneighbors_graph(data, n_neighbors=5, include_self=False)
     ward = cluster.AgglomerativeClustering(n_clusters=cluster_number,  # connectivity=connectivity,
                                            linkage='ward').fit(data)
-    for k in range(len(ward.labels_)):
-        print(str(ward.labels_[k] + 1) + '\t' + train_label[k])
-    classify_images(train_path, cluster_number, ward.labels_, train_label)
+    if log:
+        for k in range(len(ward.labels_)):
+            print(str(ward.labels_[k] + 1) + '\t' + train_label[k])
+    if classify_folder:
+        classify_images(train_path, cluster_number, ward.labels_, train_label)
     if path == '':
         write_csv(train_label, ward.labels_ + 1, path='csv/hierarchical_{0}.csv'.format(cluster_number))
     else:
@@ -484,7 +488,12 @@ def loop_run(data):
                                                      1 if si else 0)
                                     k_means_clustering(d2_data,
                                                        path='csv/kmeans_{0}_{1:06d}.csv'.format(cluster_number,
-                                                                                                str_format))
+                                                                                                str_format),
+                                                       log=False, classify_folder=False)
+                                    hierarchical_clustering(d2_data,
+                                                            'csv/hierarchical_{0}_{1:06d}.csv'.format(cluster_number,
+                                                                                                      str_format),
+                                                            log=False, classify_folder=False)
                                     print("{0:06d} done".format(str_format))
 
 
@@ -494,16 +503,18 @@ train_data, train_label = read_img_random(train_path, train_image_count)
 
 # K-Means
 # loop_run(train_data)
-# one_shot_run(train_data, whole_image_sample=True, frame_sample=False, global_color=False, composition=False,
-# segment_color=False, sift=True)
-# sift_one_shot_run(train_data, sift_n_largest_result=False, sift_count=True, sift_large_count=False,
-#                   sift_distribution=False)
-# raw_pixel_run()
-# d2_train_data = get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=False,
-#                             composition=False, segment_color=False, sift=True)
+
+d2_train_data = get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=False,
+                             composition=False, segment_color=False, sift=True)
 # d2_train_data = get_more_sift_features(train_data, sift_n_largest=True, sift_count=False, sift_large_count=False,
 #                                        sift_distribution=False)
-d2_train_data = get_raw_pixel_features(train_data)
+# d2_train_data = get_raw_pixel_features(train_data)
 
 k_means_clustering(d2_train_data)
 hierarchical_clustering(d2_train_data)
+
+# test
+# for t in range(100):
+#     k_means_clustering(d2_train_data, 'csv/kmeans_{0}_{1:03d}.csv'.format(cluster_number, t + 1), False, False)
+#     hierarchical_clustering(d2_train_data, 'csv/hierarchical_{0}_{1:03d}.csv'.format(cluster_number, t + 1), False,
+#                             False)
