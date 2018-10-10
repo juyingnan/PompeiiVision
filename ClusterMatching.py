@@ -125,47 +125,62 @@ def find_route(ref_sets, match_sets, match_seq, ref_set_title='ref', matched_set
                 print('{0}:{1} => {2}:{3}'.format(matched_set_title, i, ref_set_title, j),
                       '{0} / {1}'.format(count_match(ref_set, matched_set), matched_length_list[i]))
 
+    # matching matrix printing
+    head = ''
+    for j in range(len(matched_sets)):
+        head += '\t{0}-{1}'.format(matched_set_title, write_roman(j + 1))
+    print(head)
+    for i in range(len(ref_sets)):
+        ref_set = ref_sets[i]
+        line = '{0}-{1}'.format(ref_set_title, write_roman(i + 1))
+        for j in range(len(matched_sets)):
+            matched_set = matched_sets[j]
+            line += '\t{0}'.format(count_match(ref_set, matched_set))
+        print(line)
 
-# read scv
-csv_path = 'csv/1st_4.csv'
 
-# assign sets and lists
-# human_cat, kmeans_cat, ae_cat = read_csv(csv_path)
-human_cat = read_csv('csv/human_4.csv')
-kmeans_cat = read_csv('csv/kmeans_4.csv')
-ae_cat = read_csv('csv/ae_4.csv')
-hierarchical_cat = read_csv('csv/hierarchical_4.csv')
+if __name__ == '__main__':
+    # read scv
+    csv_path = 'csv/1st_4.csv'
 
-# find best match
-human_kmeans_match = find_best_match_cat4(human_cat, kmeans_cat)
-human_hierarchical_match = find_best_match_cat4(human_cat, hierarchical_cat)
-human_ae_match = find_best_match_cat4(human_cat, ae_cat)
-kmeans_hierarchical_match = find_best_match_cat4(kmeans_cat, hierarchical_cat)
+    # assign sets and lists
+    # human_cat, kmeans_cat, ae_cat = read_csv(csv_path)
+    human_cat = read_csv('csv/human_4.csv')
+    kmeans_cat = read_csv('csv/kmeans_4.csv')
+    ae_cat = read_csv('csv/ae_4.csv')
+    hierarchical_cat = read_csv('csv/hierarchical_4.csv')
 
-# find route from best match
-print('****************')
-print('human & kmeans')
-find_route(human_cat, kmeans_cat, human_kmeans_match, "Human", "K-Means", sankeymatic_output_format=True)
-print('****************')
-print('human & ae')
-find_route(human_cat, ae_cat, human_ae_match, "Human", "AutoEncoder", sankeymatic_output_format=True)
-print('****************')
-print('kmeans & hierarchical')
-find_route(human_cat, hierarchical_cat, human_hierarchical_match, "Human", "Hierarchical",
-           sankeymatic_output_format=True)
-print('****************')
-print('kmeans & hierarchical')
-find_route(kmeans_cat, hierarchical_cat, kmeans_hierarchical_match, "Kmeans", "Hierarchical",
-           sankeymatic_output_format=True)
-print('****************')
-
-# loop test
-import os
-
-folder_path = 'csv/'
-file_path_list = [os.path.join(folder_path, file_name) for file_name in os.listdir(folder_path) if
-                  os.path.isfile(os.path.join(folder_path, file_name)) and (file_name.startswith('kmeans_4_') or file_name.startswith('hierarchical_4_'))]
-for path in file_path_list:
-    kmeans_cat = read_csv(path)
-    print('r{0} '.format(path), end='')
+    # find best match
     human_kmeans_match = find_best_match_cat4(human_cat, kmeans_cat)
+    human_hierarchical_match = find_best_match_cat4(human_cat, hierarchical_cat)
+    human_ae_match = find_best_match_cat4(human_cat, ae_cat)
+    kmeans_hierarchical_match = find_best_match_cat4(kmeans_cat, hierarchical_cat)
+
+    # find route from best match
+    print('****************')
+    print('human & kmeans')
+    find_route(human_cat, kmeans_cat, human_kmeans_match, "Human", "K-Means", sankeymatic_output_format=True)
+    print('****************')
+    print('human & ae')
+    find_route(human_cat, ae_cat, human_ae_match, "Human", "AutoEncoder", sankeymatic_output_format=True)
+    print('****************')
+    print('kmeans & hierarchical')
+    find_route(human_cat, hierarchical_cat, human_hierarchical_match, "Human", "Hierarchical",
+               sankeymatic_output_format=True)
+    print('****************')
+    print('kmeans & hierarchical')
+    find_route(kmeans_cat, hierarchical_cat, kmeans_hierarchical_match, "Kmeans", "Hierarchical",
+               sankeymatic_output_format=True)
+    print('****************')
+
+    # loop test
+    import os
+
+    folder_path = 'csv/'
+    file_path_list = [os.path.join(folder_path, file_name) for file_name in os.listdir(folder_path) if
+                      os.path.isfile(os.path.join(folder_path, file_name)) and (
+                              file_name.startswith('kmeans_4_') or file_name.startswith('hierarchical_4_'))]
+    for file_path in file_path_list:
+        kmeans_cat = read_csv(file_path)
+        print('r{0} '.format(file_path), end='')
+        human_kmeans_match = find_best_match_cat4(human_cat, kmeans_cat)
