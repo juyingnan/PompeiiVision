@@ -174,13 +174,13 @@ if __name__ == '__main__':
     print('****************')
 
     # loop test
-    import os
-
-    folder_path = 'csv/'
-    file_path_list = [os.path.join(folder_path, file_name) for file_name in os.listdir(folder_path) if
-                      os.path.isfile(os.path.join(folder_path, file_name)) and (
-                              file_name.startswith('kmeans_4_') or file_name.startswith('hierarchical_4_'))]
-    for file_path in file_path_list:
-        kmeans_cat = read_csv(file_path)
-        print('r{0} '.format(file_path), end='')
-        human_kmeans_match = find_best_match_cat4(human_cat, kmeans_cat)
+    # import os
+    #
+    # folder_path = 'csv/'
+    # file_path_list = [os.path.join(folder_path, file_name) for file_name in os.listdir(folder_path) if
+    #                   os.path.isfile(os.path.join(folder_path, file_name)) and (
+    #                           file_name.startswith('kmeans_4_') or file_name.startswith('hierarchical_4_'))]
+    # for file_path in file_path_list:
+    #     kmeans_cat = read_csv(file_path)
+    #     print('r{0} '.format(file_path), end='')
+    #     human_kmeans_match = find_best_match_cat4(human_cat, kmeans_cat)
