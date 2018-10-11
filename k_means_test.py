@@ -217,7 +217,7 @@ def calculate_largest_n_sift(img, n):
     if len(img.shape) > 2 and img.shape[2] > 1:
         img = color.rgb2gray(img)
     detector = feature.CENSURE()
-    detector.detect(img)
+    detector.detect(np.asarray(img, np.double))
     key_point_list = []
     # print(len(detector.scales))
     for i in range(len(detector.scales)):
@@ -234,7 +234,7 @@ def calculate_sift_count(img, x):
     if len(img.shape) > 2 and img.shape[2] > 1:
         img = color.rgb2gray(img)
     detector = feature.CENSURE()
-    detector.detect(img)
+    detector.detect(np.asarray(img, np.double))
     key_point_count = 0
     # print(len(detector.scales))
     for i in range(len(detector.scales)):
@@ -497,24 +497,25 @@ def loop_run(data):
                                     print("{0:06d} done".format(str_format))
 
 
-train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
-train_image_count = 1000
-train_data, train_label = read_img_random(train_path, train_image_count)
+if __name__ == '__main__':
+    train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
+    train_image_count = 1000
+    train_data, train_label = read_img_random(train_path, train_image_count)
 
-# K-Means
-# loop_run(train_data)
+    # K-Means
+    # loop_run(train_data)
 
-d2_train_data = get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=False,
-                             composition=False, segment_color=False, sift=True)
-# d2_train_data = get_more_sift_features(train_data, sift_n_largest=True, sift_count=False, sift_large_count=False,
-#                                        sift_distribution=False)
-# d2_train_data = get_raw_pixel_features(train_data)
+    d2_train_data = get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=False,
+                                 composition=False, segment_color=False, sift=True)
+    # d2_train_data = get_more_sift_features(train_data, sift_n_largest=True, sift_count=False, sift_large_count=False,
+    #                                        sift_distribution=False)
+    # d2_train_data = get_raw_pixel_features(train_data)
 
-k_means_clustering(d2_train_data)
-hierarchical_clustering(d2_train_data)
+    k_means_clustering(d2_train_data)
+    hierarchical_clustering(d2_train_data)
 
-# test
-# for t in range(100):
-#     k_means_clustering(d2_train_data, 'csv/kmeans_{0}_{1:03d}.csv'.format(cluster_number, t + 1), False, False)
-#     hierarchical_clustering(d2_train_data, 'csv/hierarchical_{0}_{1:03d}.csv'.format(cluster_number, t + 1), False,
-#                             False)
+    # test
+    # for t in range(100):
+    #     k_means_clustering(d2_train_data, 'csv/kmeans_{0}_{1:03d}.csv'.format(cluster_number, t + 1), False, False)
+    #     hierarchical_clustering(d2_train_data, 'csv/hierarchical_{0}_{1:03d}.csv'.format(cluster_number, t + 1),
+    #                         False, False)
