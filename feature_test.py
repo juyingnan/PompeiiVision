@@ -1,6 +1,6 @@
 from skimage.feature import daisy
 from skimage import color, io, transform
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import os
 import csv
 import shutil
@@ -9,9 +9,8 @@ from sklearn import cluster
 import numpy as np
 import ClusterMatching
 from skimage.feature import hog
-from skimage.feature import blob_dog, blob_log, blob_doh
-from skimage.feature import (match_descriptors, corner_harris,
-                             corner_peaks, ORB, plot_matches)
+from skimage.feature import blob_log
+from skimage.feature import ORB
 from skimage.util.shape import view_as_windows
 from skimage.util import montage
 from scipy.cluster.vq import kmeans2
@@ -106,6 +105,7 @@ def normalize_features(data, v_max=1.0, v_min=0.0):
 
 
 def get_dense_daisy_features(data):
+    # http://scikit-image.org/docs/dev/auto_examples/features_detection/plot_daisy.html#sphx-glr-auto-examples-features-detection-plot-daisy-py
     result = []
     for i in range(len(data)):
         img = data[i]
@@ -118,6 +118,7 @@ def get_dense_daisy_features(data):
 
 
 def get_histogram_features(data):
+    # http://scikit-image.org/docs/dev/auto_examples/features_detection/plot_hog.html#sphx-glr-auto-examples-features-detection-plot-hog-py
     result = []
     for i in range(len(data)):
         img = data[i]
@@ -131,6 +132,7 @@ def get_histogram_features(data):
 
 
 def get_blob_features(data):
+    # http://scikit-image.org/docs/dev/auto_examples/features_detection/plot_blob.html#sphx-glr-auto-examples-features-detection-plot-blob-py
     result = []
     for i in range(len(data)):
         img = data[i]
@@ -147,6 +149,7 @@ def get_blob_features(data):
 
 
 def get_orb_features(data):
+    # http://scikit-image.org/docs/dev/auto_examples/features_detection/plot_orb.html#sphx-glr-auto-examples-features-detection-plot-orb-py
     result = []
     for i in range(len(data)):
         img = data[i]
@@ -156,7 +159,7 @@ def get_orb_features(data):
 
         descriptor_extractor.detect_and_extract(np.asarray(image_gray, np.double))
         keypoints = descriptor_extractor.keypoints
-        descriptors = descriptor_extractor.descriptors
+        # descriptors = descriptor_extractor.descriptors
 
         # plt.imshow(hog_image)
         # plt.show()
@@ -233,10 +236,10 @@ def get_shape_index_features(data, size=10):
         # In order to reduce the impact of noise, we apply a Gaussian filter to it,
         # and show the results once in
 
-        s_smooth = ndi.gaussian_filter(s, sigma=0.5)
+        # s_smooth = ndi.gaussian_filter(s, sigma=0.5)
 
-        point_y_s, point_x_s = np.where(np.abs(s_smooth - target) < delta)
-        point_z_s = image_gray[point_y_s, point_x_s]
+        # point_y_s, point_x_s = np.where(np.abs(s_smooth - target) < delta)
+        # point_z_s = image_gray[point_y_s, point_x_s]
 
         # plt.imshow(hog_image)
         # plt.show()
