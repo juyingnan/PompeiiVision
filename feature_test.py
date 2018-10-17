@@ -248,36 +248,36 @@ def get_shape_index_features(data, size=10):
     result = normalize_features(result, v_max=1.0, v_min=0.0)
     return result
 
+if __name__ == '__main__':
+    train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
+    train_image_count = 1000
+    train_data, train_label = read_img_random(train_path, train_image_count)
+    np.seterr(all='ignore')
+    # K-Means
+    # loop_run(train_data)
 
-train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
-train_image_count = 1000
-train_data, train_label = read_img_random(train_path, train_image_count)
-np.seterr(all='ignore')
-# K-Means
-# loop_run(train_data)
+    # d2_train_data = get_dense_daisy_features(train_data)
+    # d2_train_data = get_histogram_features(train_data)
+    # d2_train_data = get_blob_features(train_data)
+    # d2_train_data = get_orb_features(train_data)
+    # d2_train_data = get_filterbank_features(train_data)
+    # d2_train_data = get_filterbank2_features(train_data)
+    d2_train_data = get_shape_index_features(train_data)
 
-# d2_train_data = get_dense_daisy_features(train_data)
-# d2_train_data = get_histogram_features(train_data)
-# d2_train_data = get_blob_features(train_data)
-# d2_train_data = get_orb_features(train_data)
-# d2_train_data = get_filterbank_features(train_data)
-# d2_train_data = get_filterbank2_features(train_data)
-d2_train_data = get_shape_index_features(train_data)
+    csv_path = 'csv/dense_daisy_hierarchical_{0}.csv'.format(cluster_number)
+    hierarchical_clustering(d2_train_data, path=csv_path)
 
-csv_path = 'csv/dense_daisy_hierarchical_{0}.csv'.format(cluster_number)
-hierarchical_clustering(d2_train_data, path=csv_path)
+    # assign sets and lists
+    # human_cat, kmeans_cat, ae_cat = read_csv(csv_path)
+    human_cat = ClusterMatching.read_csv('csv/human_4.csv')
+    hierarchical_cat = ClusterMatching.read_csv(csv_path)
 
-# assign sets and lists
-# human_cat, kmeans_cat, ae_cat = read_csv(csv_path)
-human_cat = ClusterMatching.read_csv('csv/human_4.csv')
-hierarchical_cat = ClusterMatching.read_csv(csv_path)
+    # find best match
+    human_hierarchical_match = ClusterMatching.find_best_match_cat4(human_cat, hierarchical_cat)
 
-# find best match
-human_hierarchical_match = ClusterMatching.find_best_match_cat4(human_cat, hierarchical_cat)
-
-# find route from best match
-print('****************')
-print('human & hierarchical')
-ClusterMatching.find_route(human_cat, hierarchical_cat, human_hierarchical_match, "Human", "Hierarchical",
-                           sankeymatic_output_format=True)
-print('****************')
+    # find route from best match
+    print('****************')
+    print('human & hierarchical')
+    ClusterMatching.find_route(human_cat, hierarchical_cat, human_hierarchical_match, "Human", "Hierarchical",
+                               sankeymatic_output_format=True)
+    print('****************')
