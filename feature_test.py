@@ -248,6 +248,7 @@ def get_shape_index_features(data, size=10):
     result = normalize_features(result, v_max=1.0, v_min=0.0)
     return result
 
+
 if __name__ == '__main__':
     train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
     train_image_count = 1000
