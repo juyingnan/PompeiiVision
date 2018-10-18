@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from MulticoreTSNE import MulticoreTSNE as TSNE
 from scipy import io
 
-mat_path = 'mat/raw.mat'
+mat_path = 'mat/shape_index_1.mat'
 digits = io.loadmat(mat_path)
 X, y = digits.get('feature_matrix'), digits.get('label')[0]
 n_samples, n_features = X.shape
