@@ -40,18 +40,18 @@ def read_img_random(path, total_count):
 
 
 if __name__ == '__main__':
-    w = 100
-    h = 100
+    w = 50
+    h = 50
     c = 3
     train_image_count = 1000
     category_count = 4
-    train_path = r'C:\Users\bunny\Desktop\test_20180919\svd_test/'
+    train_path = r'D:\Projects\pompeii\test_20180919\svd_test/'
     train_data, train_label = read_img_random(train_path, train_image_count)
     np.seterr(all='ignore')
 
     # d2_train_data = feature_test.get_shape_index_features(train_data, size=10)
-    # d2_train_data = k_means_test.get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=False,
-    #                            composition=False, segment_color=False, sift=True)
+    # d2_train_data = k_means_test.get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=True,
+    #                             composition=True, segment_color=True, sift=True)
     d2_train_data = k_means_test.get_raw_pixel_features(train_data)
-    sio.savemat('mat/raw_100.mat',
+    sio.savemat('mat/raw_50.mat',
                 mdict={'feature_matrix': d2_train_data, 'label': train_label})
