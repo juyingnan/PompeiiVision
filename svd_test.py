@@ -70,9 +70,9 @@ ax.set_ylim(-edge_max, edge_max)
 ax.set_xlim(-edge_max, edge_max)
 for i in range(xx.shape[0]):
     if "raw" in mat_path:
-        ax.text(xx[i], yy[i], '.', fontdict={'size': 10})
+        ax.text(r_x[i], r_y[i], '.', fontdict={'size': 10})
     else:
-        ax.text(xx[i], yy[i], str(i), fontdict={'size': 8})
+        ax.text(r_x[i], r_y[i], str(i), fontdict={'size': 8})
 ax.set_title('features_correlation')
 
 eigenvalues, eigenvectors = np.linalg.eig(np.cov(X.transpose()))
