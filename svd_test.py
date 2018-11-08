@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from scipy import io
 import numpy as np
 
-mat_path = 'mat/feature_all.mat'
+mat_path = 'mat/shape_index_2.mat'
 digits = io.loadmat(mat_path)
 X, y = digits.get('feature_matrix'), digits.get('label')[0]
 # X = X.transpose()
@@ -97,15 +97,11 @@ for i in range(X.shape[0]):
     ax.text(xx[i], yy[i], str(y[i] + 1), color=plt.cm.Set1(int(y[i])), fontdict={'size': 8})
 ax.set_title('samples_projection')
 
-eigenvalues, eigenvectors = np.linalg.eig(np.cov(X.transpose()))
-U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=False)
-s[2:] = 0
-
 ax = fig.add_subplot(326)
 ax.grid(True, which='both', color='#CFCFCF')
 ax.axhline(y=0, color='k')
 ax.axvline(x=0, color='k')
-x_mean = X.mean(axis=1, keepdims=True)
+x_mean = X.mean(axis=1, keepdims=True) + 1e-5
 xx = (X - x_mean).dot(ev1 - ev1.mean())
 yy = (X - x_mean).dot(ev2 - ev2.mean())
 r_x, r_y = [], []
