@@ -51,7 +51,7 @@ for i in range(xx.shape[0]):
     if "raw" in mat_path:
         ax.text(xx[i], yy[i], '.', fontdict={'size': 10})
     else:
-        ax.text(xx, yy, str(i), fontdict={'size': 8})
+        ax.text(xx[i], yy[i], str(i), fontdict={'size': 8})
 ax.set_title('features_projection')
 
 ax = fig.add_subplot(324)
@@ -69,8 +69,10 @@ edge_max = max([abs(max(r_x)), abs(min(r_x)), abs(max(r_y)), abs(min(r_y))]) * (
 ax.set_ylim(-edge_max, edge_max)
 ax.set_xlim(-edge_max, edge_max)
 for i in range(xx.shape[0]):
-    # ax.text(xx, yy, str(i), color=plt.cm.tab20(i), fontdict={'size': 8})
-    ax.text(r_x[i], r_y[i], '.', fontdict={'size': 10})
+    if "raw" in mat_path:
+        ax.text(xx[i], yy[i], '.', fontdict={'size': 10})
+    else:
+        ax.text(xx[i], yy[i], str(i), fontdict={'size': 8})
 ax.set_title('features_correlation')
 
 eigenvalues, eigenvectors = np.linalg.eig(np.cov(X.transpose()))
