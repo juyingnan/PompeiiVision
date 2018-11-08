@@ -68,12 +68,14 @@ ax.set_xlim(-0.5, 0.5)
 ax.grid(True, which='both')
 ax.axhline(y=0, color='k')
 ax.axvline(x=0, color='k')
-ev1 = raw_eigenvectors[0]
-ev2 = raw_eigenvectors[1]
-for i in range(ev1.shape[0]):
-    ax.text(ev1[i], ev2[i], str(y[i] + 1), color=plt.cm.Set1(int(y[i])), fontdict={'size': 8})
-ax.set_title('eigenvector_0,1_raw')
-bottom, top = plt.ylim()  # return the current ylim
+ev1 = raw_eigenvectors[0].real
+ev2 = raw_eigenvectors[1].real
+for i in range(X.transpose().shape[0]):
+    xx = X.transpose()[i].dot(ev1)
+    yy = X.transpose()[i].dot(ev2)
+    # ax.text(xx, yy, str(i), color=plt.cm.tab20(i), fontdict={'size': 8})
+    ax.text(xx, yy, '.', fontdict={'size': 10})
+ax.set_title('raw_pixels_ev0,1')
 
 ax = fig.add_subplot(428)
 ax.set_ylim(-0.5, 0.5)
