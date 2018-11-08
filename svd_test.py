@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from scipy import io
 import numpy as np
 
-mat_path = 'mat/raw_20.mat'
+mat_path = 'mat/feature_all.mat'
 digits = io.loadmat(mat_path)
 X, y = digits.get('feature_matrix'), digits.get('label')[0]
 # X = X.transpose()
@@ -24,7 +24,8 @@ fig = plt.figure()
 ax = fig.add_subplot(321)
 # ax.bar(np.arange(len(X[0])), X[0])
 ax.imshow(X.transpose())
-# ax.set_aspect(0.1)
+if "raw" in mat_path:
+    ax.set_aspect(0.1)
 ax.set_title('original_mat')
 
 ax = fig.add_subplot(322)
@@ -47,8 +48,10 @@ small_edge = (max(xx) - min(xx)) * small_edge_index
 ax.set_xlim(min(xx) - small_edge if min(xx) <= -small_edge else -small_edge,
             max(xx) + small_edge if max(xx) >= small_edge else small_edge)
 for i in range(xx.shape[0]):
-    # ax.text(xx, yy, str(i), color=plt.cm.tab20(i), fontdict={'size': 8})
-    ax.text(xx[i], yy[i], '.', fontdict={'size': 10})
+    if "raw" in mat_path:
+        ax.text(xx[i], yy[i], '.', fontdict={'size': 10})
+    else:
+        ax.text(xx, yy, str(i), fontdict={'size': 8})
 ax.set_title('features_projection')
 
 ax = fig.add_subplot(324)
