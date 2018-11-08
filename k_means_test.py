@@ -81,7 +81,7 @@ def get_raw_pixel_features(data):
     elif len(data.shape) == 4:
         result = data.reshape((data.shape[0], data.shape[1] * data.shape[2] * data.shape[3]))
     else:
-        result = data.flat
+        result = []
     return result
 
 
