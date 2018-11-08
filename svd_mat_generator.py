@@ -7,7 +7,7 @@ from scipy import io as sio
 import k_means_test
 
 
-def read_img_random(path, total_count):
+def read_img_random(path, total_count, as_gray=False):
     cate = [path + folder for folder in os.listdir(path) if os.path.isdir(path + folder)]
     imgs = []
     labels = []
@@ -22,9 +22,7 @@ def read_img_random(path, total_count):
         while count < total_count and count < len(file_path_list):
             im = file_path_list[count]
             count += 1
-            img = io.imread(im)
-            if img.shape[2] == 4:
-                img = img[:, :, :3]
+            img = io.imread(im, as_gray=as_gray)
             # for angle in [0,90,180,270]:
             #     _img = transform.rotate(img, angle)
             #     _img = transform.resize(_img, (w, h))
@@ -40,18 +38,17 @@ def read_img_random(path, total_count):
 
 
 if __name__ == '__main__':
-    w = 50
-    h = 50
+    w = 20
+    h = 20
     c = 3
     train_image_count = 1000
     category_count = 4
     train_path = r'D:\Projects\pompeii\test_20180919\svd_test/'
-    train_data, train_label = read_img_random(train_path, train_image_count)
+    train_data, train_label = read_img_random(train_path, train_image_count, as_gray=True)
     np.seterr(all='ignore')
 
     # d2_train_data = feature_test.get_shape_index_features(train_data, size=10)
     # d2_train_data = k_means_test.get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=True,
     #                             composition=True, segment_color=True, sift=True)
     d2_train_data = k_means_test.get_raw_pixel_features(train_data)
-    sio.savemat('mat/raw_50.mat',
-                mdict={'feature_matrix': d2_train_data, 'label': train_label})
+    sio.savemat('mat/raw_20.mat', mdict={'feature_matrix': d2_train_data, 'label': train_label})
