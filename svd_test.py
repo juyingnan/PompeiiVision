@@ -7,39 +7,46 @@
 import matplotlib.pyplot as plt
 from scipy import io
 import numpy as np
+from sklearn import preprocessing
 
-mat_path = 'mat/shape_index_2.mat'
+mat_path = 'mat/raw_50.mat'
+x_axis_index = 0
+y_axis_index = 1
 digits = io.loadmat(mat_path)
-X, y = digits.get('feature_matrix'), digits.get('label')[0]
-# X = X.transpose()
+X, y = digits.get('feature_matrix'), digits.get('label')[0]  # X: nxm: n=67//sample, m=12,10,71,400//feature
+file_names, indexes = digits.get('file_name'), digits.get('index')[0]
 n_samples, n_features = X.shape
+roman_label = ['I', 'II', 'III', 'IV']
 
-eigenvalues, eigenvectors = np.linalg.eig(np.cov(X))
+eigenvalues, eigenvectors = np.linalg.eig(np.cov(X))  # values: nx1/67x1, vectors: nxn/67x67
 
-U, s, Vh = np.linalg.svd(X, full_matrices=False)
-
-s[2:] = 0
+U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=True)  # u: mxm, s: mx1, v:nxn/67x67
+# s[2:] = 0
 
 fig = plt.figure()
+fig.subplots_adjust(bottom=0.05)
+fig.subplots_adjust(top=0.95)
+fig.subplots_adjust(hspace=0.35)
 ax = fig.add_subplot(321)
-# ax.bar(np.arange(len(X[0])), X[0])
 ax.imshow(X.transpose())
 if "raw" in mat_path:
     ax.set_aspect(0.1)
 ax.set_title('original_mat')
 
 ax = fig.add_subplot(322)
-ax.bar(np.arange(len(eigenvalues)), eigenvalues)
-ax.set_title('eigenvalues_feature')
+ax.bar(np.arange(len(s)), s)
+ax.set_title('singular_values_feature')
 
 small_edge_index = 0.2
 ax = fig.add_subplot(323)
 ax.grid(True, which='both', color='#CFCFCF')
 ax.axhline(y=0, color='k')
 ax.axvline(x=0, color='k')
-ev1 = eigenvectors[0].real
-ev2 = eigenvectors[1].real
-xx = X.transpose().dot(ev1)
+plt.xlabel('Projection on {}'.format(x_axis_index + 1))
+plt.ylabel('Projection on {}'.format(y_axis_index + 1))
+ev1 = Vh.transpose()[x_axis_index].real  # ev: nx1/67x1
+ev2 = Vh.transpose()[y_axis_index].real
+xx = X.transpose().dot(ev1)  # mxn.nx1 = mx1
 yy = X.transpose().dot(ev2)
 small_edge = (max(yy) - min(yy)) * small_edge_index
 ax.set_ylim(min(yy) - small_edge if min(yy) <= -small_edge else -small_edge,
@@ -58,34 +65,40 @@ ax = fig.add_subplot(324)
 ax.grid(True, which='both', color='#CFCFCF')
 ax.axhline(y=0, color='k')
 ax.axvline(x=0, color='k')
-x_mean = X.transpose().mean(axis=1, keepdims=True)
-xx = (X.transpose() - x_mean).dot(ev1 - ev1.mean())
-yy = (X.transpose() - x_mean).dot(ev2 - ev2.mean())
-r_x, r_y = [], []
-for i in range(xx.shape[0]):
-    r_x.append(xx[i] / np.linalg.norm(X.transpose()[i] - x_mean[i]) / np.linalg.norm(ev1 - ev1.mean()))
-    r_y.append(yy[i] / np.linalg.norm(X.transpose()[i] - x_mean[i]) / np.linalg.norm(ev2 - ev2.mean()))
-edge_max = max([abs(max(r_x)), abs(min(r_x)), abs(max(r_y)), abs(min(r_y))]) * (1 + small_edge_index)
-ax.set_ylim(-edge_max, edge_max)
-ax.set_xlim(-edge_max, edge_max)
+plt.xlabel('Correlation on {}'.format(x_axis_index + 1))
+plt.ylabel('Correlation on {}'.format(y_axis_index + 1))
+s_x = preprocessing.normalize(X.transpose())
+normalized_vh = preprocessing.normalize(Vh.real.transpose())
+s_ev1 = normalized_vh[x_axis_index]
+s_ev2 = normalized_vh[y_axis_index]
+xx = s_x.dot(s_ev1)
+yy = s_x.dot(s_ev2)
+small_edge = (max(yy) - min(yy)) * small_edge_index
+ax.set_ylim(min(yy) - small_edge if min(yy) <= -small_edge else -small_edge,
+            max(yy) + small_edge if max(yy) >= small_edge else small_edge)
+small_edge = (max(xx) - min(xx)) * small_edge_index
+ax.set_xlim(min(xx) - small_edge if min(xx) <= -small_edge else -small_edge,
+            max(xx) + small_edge if max(xx) >= small_edge else small_edge)
 for i in range(xx.shape[0]):
     if "raw" in mat_path:
-        ax.text(r_x[i], r_y[i], '.', fontdict={'size': 10})
+        ax.text(xx[i], yy[i], '.', fontdict={'size': 10})
     else:
-        ax.text(r_x[i], r_y[i], str(i), fontdict={'size': 8})
+        ax.text(xx[i], yy[i], str(i), fontdict={'size': 8})
 ax.set_title('features_correlation')
 
-eigenvalues, eigenvectors = np.linalg.eig(np.cov(X.transpose()))
-U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=False)
-s[2:] = 0
+eigenvalues, eigenvectors = np.linalg.eig(np.cov(X.transpose()))  # values: mx1/12x1, vectors: mxm/12x12
+U, s, Vh = np.linalg.svd(X, full_matrices=True)  # u: nxn/67x67, s: mx1, v:mxm
+# s[2:] = 0
 
 ax = fig.add_subplot(325)
 ax.grid(True, which='both', color='#CFCFCF')
 ax.axhline(y=0, color='k')
 ax.axvline(x=0, color='k')
-ev1 = eigenvectors[0].real
-ev2 = eigenvectors[1].real
-xx = X.dot(ev1)
+plt.xlabel('Projection on {}'.format(x_axis_index + 1))
+plt.ylabel('Projection on {}'.format(y_axis_index + 1))
+ev1 = Vh.transpose()[x_axis_index].real  # ev: nx1/67x1
+ev2 = Vh.transpose()[y_axis_index].real
+xx = X.dot(ev1)  # nxm.mx1=nx1
 yy = X.dot(ev2)
 small_edge = (max(yy) - min(yy)) * small_edge_index
 ax.set_ylim(min(yy) - small_edge if min(yy) <= -small_edge else -small_edge,
@@ -94,25 +107,32 @@ small_edge = (max(xx) - min(xx)) * small_edge_index
 ax.set_xlim(min(xx) - small_edge if min(xx) <= -small_edge else -small_edge,
             max(xx) + small_edge if max(xx) >= small_edge else small_edge)
 for i in range(X.shape[0]):
-    ax.text(xx[i], yy[i], str(y[i] + 1), color=plt.cm.Set1(int(y[i])), fontdict={'size': 8})
-ax.set_title('samples_projection')
+    ax.text(xx[i], yy[i], roman_label[y[i]] + '-' + str(indexes[i]), color=plt.cm.tab10(int(y[i])),
+            fontdict={'size': 8})
+ax.set_title('samples/images_projection')
 
 ax = fig.add_subplot(326)
 ax.grid(True, which='both', color='#CFCFCF')
 ax.axhline(y=0, color='k')
 ax.axvline(x=0, color='k')
-x_mean = X.mean(axis=1, keepdims=True) + 1e-5
-xx = (X - x_mean).dot(ev1 - ev1.mean())
-yy = (X - x_mean).dot(ev2 - ev2.mean())
-r_x, r_y = [], []
-for i in range(xx.shape[0]):
-    r_x.append(xx[i] / np.linalg.norm(X[i] - x_mean[i]) / np.linalg.norm(ev1 - ev1.mean()))
-    r_y.append(yy[i] / np.linalg.norm(X[i] - x_mean[i]) / np.linalg.norm(ev2 - ev2.mean()))
-edge_max = max([abs(max(r_x)), abs(min(r_x)), abs(max(r_y)), abs(min(r_y))]) * (1 + small_edge_index)
-ax.set_ylim(-edge_max, edge_max)
-ax.set_xlim(-edge_max, edge_max)
+plt.xlabel('Correlation on {}'.format(x_axis_index + 1))
+plt.ylabel('Correlation on {}'.format(y_axis_index + 1))
+s_x = preprocessing.normalize(X)
+normalized_vh = preprocessing.normalize(Vh.real.transpose())
+s_ev1 = normalized_vh[x_axis_index]
+s_ev2 = normalized_vh[y_axis_index]
+xx = s_x.dot(s_ev1)
+yy = s_x.dot(s_ev2)
+small_edge = (max(yy) - min(yy)) * small_edge_index
+ax.set_ylim(min(yy) - small_edge if min(yy) <= -small_edge else -small_edge,
+            max(yy) + small_edge if max(yy) >= small_edge else small_edge)
+small_edge = (max(xx) - min(xx)) * small_edge_index
+ax.set_xlim(min(xx) - small_edge if min(xx) <= -small_edge else -small_edge,
+            max(xx) + small_edge if max(xx) >= small_edge else small_edge)
 for i in range(X.shape[0]):
-    ax.text(r_x[i], r_y[i], str(y[i] + 1), color=plt.cm.Set1(int(y[i])), fontdict={'size': 8})
-ax.set_title('samples_correlation')
+    ax.text(xx[i], yy[i], roman_label[y[i]] + '-' + str(indexes[i]), color=plt.cm.tab10(int(y[i])),
+            fontdict={'size': 8})
+    print(roman_label[y[i]] + '-' + str(indexes[i]), file_names[i])
+ax.set_title('samples/images_correlation')
 
 plt.show()
