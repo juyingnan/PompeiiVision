@@ -9,7 +9,6 @@ from scipy import io as sio
 import numpy as np
 from sklearn import preprocessing
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import matplotlib.patches as mpatches
 import os
 from skimage import io, transform
 import xml.etree.ElementTree as ET
@@ -65,7 +64,10 @@ U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=True)  # u: mxm, s: mx1, v
 fig = plt.figure(figsize=(20, 20))
 fig.subplots_adjust(bottom=0.05)
 fig.subplots_adjust(top=0.95)
-fig.subplots_adjust(hspace=0.35)
+fig.subplots_adjust(left=0.05)
+fig.subplots_adjust(right=0.95)
+fig.subplots_adjust(hspace=0.25)
+
 ax = fig.add_subplot(321)
 ax.imshow(X.transpose())
 if "raw" in mat_path:
@@ -76,7 +78,7 @@ ax = fig.add_subplot(322)
 ax.bar(np.arange(len(s)), s)
 ax.set_title('singular_values_feature')
 
-small_edge_index = 0.2
+small_edge_index = 0.1
 ax = fig.add_subplot(323)
 ax.grid(True, which='both', color='#CFCFCF')
 ax.axhline(y=0, color='k')
@@ -129,7 +131,7 @@ eigenvalues, eigenvectors = np.linalg.eig(np.cov(X.transpose()))  # values: mx1/
 U, s, Vh = np.linalg.svd(X, full_matrices=True)  # u: nxn/67x67, s: mx1, v:mxm
 # s[2:] = 0
 
-lo = 0.1  # label_offset
+lo_index = 0.02  # label_offset_index
 
 ax = fig.add_subplot(325)
 ax.grid(True, which='both', color='#CFCFCF')
@@ -142,39 +144,46 @@ ev2 = Vh.transpose()[y_axis_index].real
 xx = X.dot(ev1)  # nxm.mx1=nx1
 yy = X.dot(ev2)
 small_edge = (max(yy) - min(yy)) * small_edge_index
-ax.set_ylim(min(yy) - small_edge if min(yy) <= -small_edge else -small_edge,
-            max(yy) + small_edge if max(yy) >= small_edge else small_edge)
+# ax.set_ylim(min(yy) - small_edge if min(yy) <= -small_edge else -small_edge,
+#             max(yy) + small_edge if max(yy) >= small_edge else small_edge)
+ax.set_ylim(min(yy) - small_edge,
+            max(yy) + small_edge)
 small_edge = (max(xx) - min(xx)) * small_edge_index
-ax.set_xlim(min(xx) - small_edge if min(xx) <= -small_edge else -small_edge,
-            max(xx) + small_edge if max(xx) >= small_edge else small_edge)
+# ax.set_xlim(min(xx) - small_edge if min(xx) <= -small_edge else -small_edge,
+#             max(xx) + small_edge if max(xx) >= small_edge else small_edge)
+ax.set_xlim(min(xx) - small_edge,
+            max(xx) + small_edge)
+lo_v = (max(yy) - min(yy)) * lo_index
+lo_h = (max(xx) - min(xx)) * lo_index
 
-# for i in range(5):
+current = 0
 for i in range(X.shape[0]):
     # dot and text
-    ax.text(xx[i] - 3 * lo, yy[i] + lo, roman_label[y[i]] + '-' + str(indexes[i]), color=plt.cm.tab10(int(y[i])),
+    plt.plot(xx[i], yy[i], '.', color=plt.cm.tab10(int(y[i])), gid='mypatch_{:03d}'.format(current))
+    ax.text(xx[i] - lo_h, yy[i] + lo_v, roman_label[y[i]] + '-' + str(indexes[i]), color=plt.cm.tab10(int(y[i])),
             fontdict={'size': 8})
-    dot = plt.Circle((xx[i], yy[i]), 0.05, color=plt.cm.tab10(int(y[i])))
-    patch = ax.add_patch(dot)
-    ax.add_patch(patch)
-    patch.set_gid('mypatch_{:03d}'.format(i))
+    # dot = plt.Circle((xx[i], yy[i]), 0.05, color=plt.cm.tab10(int(y[i])))
+    # patch = ax.add_patch(dot)
+    # ax.add_patch(patch)
+    # patch.set_gid('mypatch_{:03d}'.format(current))
 
     # image
     label = str(file_names[i]).strip()
     index = raw_file_names.index(label)
     imagebox = getImage2(raw_img[index])
-    ab = AnnotationBbox(imagebox, xy=(xx[i] + lo, yy[i] + lo), frameon=False, box_alignment=(0, 0))
-    ab.offsetbox.get_children()[0].set_gid('myimage_{:03d}'.format(i))
+    ab = AnnotationBbox(imagebox, xy=(xx[i] + lo_h, yy[i] + lo_v), frameon=False, box_alignment=(0, 0))
+    ab.offsetbox.get_children()[0].set_gid('myimage_{:03d}'.format(current))
     ax.add_artist(ab)
 
     # tooltip
-    annotate = ax.annotate(label, xy=(xx[i], yy[i] - 3 * lo), xytext=(0, 0),
-                           textcoords='offset points', color='w', ha='center',
+    annotate = ax.annotate(label, xy=(xx[i], yy[i] - lo_v * 3), xytext=(0, 0),
+                           textcoords='offset points', color='w', ha='right',
                            fontsize=9, bbox=dict(boxstyle='round, pad=.5',
                                                  fc=(.1, .1, .1, .92),
                                                  ec=(1., 1., 1.), lw=1,
                                                  zorder=3))
-    annotate.set_gid('mytooltip_{:03d}'.format(i))
-
+    annotate.set_gid('mytooltip_{:03d}'.format(current))
+    current += 1
 ax.set_title('samples/images_projection')
 
 ax = fig.add_subplot(326)
@@ -190,21 +199,53 @@ s_ev2 = normalized_vh[y_axis_index]
 xx = s_x.dot(s_ev1)
 yy = s_x.dot(s_ev2)
 small_edge = (max(yy) - min(yy)) * small_edge_index
-ax.set_ylim(min(yy) - small_edge if min(yy) <= -small_edge else -small_edge,
-            max(yy) + small_edge if max(yy) >= small_edge else small_edge)
+# ax.set_ylim(min(yy) - small_edge if min(yy) <= -small_edge else -small_edge,
+#             max(yy) + small_edge if max(yy) >= small_edge else small_edge)
+ax.set_ylim(min(yy) - small_edge,
+            max(yy) + small_edge)
 small_edge = (max(xx) - min(xx)) * small_edge_index
-ax.set_xlim(min(xx) - small_edge if min(xx) <= -small_edge else -small_edge,
-            max(xx) + small_edge if max(xx) >= small_edge else small_edge)
+# ax.set_xlim(min(xx) - small_edge if min(xx) <= -small_edge else -small_edge,
+#             max(xx) + small_edge if max(xx) >= small_edge else small_edge)
+ax.set_xlim(min(xx) - small_edge,
+            max(xx) + small_edge)
+lo_v = (max(yy) - min(yy)) * lo_index
+lo_h = (max(xx) - min(xx)) * lo_index
+
 for i in range(X.shape[0]):
-    ax.text(xx[i], yy[i], roman_label[y[i]] + '-' + str(indexes[i]), color=plt.cm.tab10(int(y[i])),
+    # dot and text
+    plt.plot(xx[i], yy[i], '.', color=plt.cm.tab10(int(y[i])), gid='mypatch_{:03d}'.format(current))
+    ax.text(xx[i] - lo_h, yy[i] + lo_v, roman_label[y[i]] + '-' + str(indexes[i]),
+            color=plt.cm.tab10(int(y[i])),
             fontdict={'size': 8})
-    print(roman_label[y[i]] + '-' + str(indexes[i]), file_names[i])
+    # dot = plt.Circle((xx[i], yy[i]), 0.05, color=plt.cm.tab10(int(y[i])))
+    # patch = ax.add_patch(dot)
+    # ax.add_patch(patch)
+    # patch.set_gid('mypatch_{:03d}'.format(current))
+
+    # image
+    label = str(file_names[i]).strip()
+    index = raw_file_names.index(label)
+    imagebox = getImage2(raw_img[index])
+    ab = AnnotationBbox(imagebox, xy=(xx[i] + lo_h, yy[i] + lo_v), frameon=False, box_alignment=(0, 0))
+    ab.offsetbox.get_children()[0].set_gid('myimage_{:03d}'.format(current))
+    ax.add_artist(ab)
+
+    # tooltip
+    annotate = ax.annotate(label, xy=(xx[i], yy[i] - lo_v * 3), xytext=(0, 0),
+                           textcoords='offset points', color='w', ha='right',
+                           fontsize=9, bbox=dict(boxstyle='round, pad=.5',
+                                                 fc=(.1, .1, .1, .92),
+                                                 ec=(1., 1., 1.), lw=1,
+                                                 zorder=3))
+    annotate.set_gid('mytooltip_{:03d}'.format(current))
+    # print(roman_label[y[i]] + '-' + str(indexes[i]), file_names[i])
+    current += 1
 ax.set_title('samples/images_correlation')
 
 # plt.show()
 
 f = BytesIO()
-fig.savefig(f, format="svg")
+fig.savefig(f, format="svg", transparent=True)
 
 # --- Add interactivity ---
 
@@ -215,7 +256,7 @@ tree.set('onload', 'init(evt)')
 # print(xmlid)
 
 # for i in range(5):
-for i in range(X.shape[0]):
+for i in range(current):
     # Hide the tooltips
     tooltip = xmlid['mytooltip_{:03d}'.format(i)]
     tooltip.set('visibility', 'hidden')
