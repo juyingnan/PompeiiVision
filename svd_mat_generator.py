@@ -45,8 +45,8 @@ def read_img_random(path, total_count, as_gray=False):
 
 
 if __name__ == '__main__':
-    w = 50
-    h = 50
+    w = 20
+    h = 20
     c = 3
     train_image_count = 10000
     train_path = r'D:\Projects\pompeii\test_20180919\svd_test/'
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     # d2_train_data = k_means_test.get_features(train_data, whole_image_sample=True, frame_sample=False,
     #                                         global_color=True, composition=True, segment_color=True, sift=True)
     d2_train_data = k_means_test.get_raw_pixel_features(train_data)
-    sio.savemat('mat/raw_50.mat',
+    sio.savemat('mat/raw_' + str(w) + '.mat',
                 mdict={'feature_matrix': d2_train_data,
                        'label': train_label,
                        'file_name': train_file_paths,
