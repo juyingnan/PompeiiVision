@@ -36,7 +36,7 @@ def resize_img(path, new_width=0, new_height=0):
             new_h = int(_h / _w * new_w)
         if new_w == 0 and new_h != 0:
             new_w = int(_w / _h * new_h)
-        img = resize(img, (new_h, new_w))
+        img = resize(img, (new_h, new_w), anti_aliasing=True)
         io.imsave(file_path, img)
         del img
         count += 1
