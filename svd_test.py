@@ -34,7 +34,7 @@ def read_img_random(path, total_count):
             img = io.imread(im)
             if img.shape[2] == 4:
                 img = img[:, :, :3]
-            img = transform.rescale(img, 1.0 / 4.0, anti_aliasing=True)
+            img = transform.rescale(img, 1.0 / 5.0, anti_aliasing=True)
             imgs.append(img)
             labels.append(im.split('\\')[-1])
             if count % 100 == 0:
@@ -43,11 +43,33 @@ def read_img_random(path, total_count):
     return imgs, labels
 
 
-raw_root = r'D:\Projects\pompeii\test_20180919\svd_test/'
+def generate_feature_list():
+    result = []
+    append_feature(result, 'Global_color: average_hue_saturation', 3)
+    append_feature(result, 'Global_color: hue_distribution', 20)
+    append_feature(result, 'Global_color: quantized_hues_number', 1)
+    append_feature(result, 'composition: seg_x', 5)
+    append_feature(result, 'composition: seg_y', 5)
+    append_feature(result, 'composition: seg_variance', 5)
+    append_feature(result, 'composition: seg_skewness', 5)
+    append_feature(result, 'Segment_color: seg_h', 5)
+    append_feature(result, 'Segment_color: seg_s', 5)
+    append_feature(result, 'Segment_color: seg_v', 5)
+    append_feature(result, 'Key_point: largest n scales of kp', 12)
+    return result
+
+
+def append_feature(result_list, feature_name, feature_count):
+    for i in range(feature_count):
+        result_list.append(feature_name + ' ' + str(feature_count + 1))
+
+
+raw_root = r'D:\Projects\pompeii\20190319\svd_test/'
 raw_img, raw_file_names = read_img_random(raw_root, 1000)
 ET.register_namespace("", "http://www.w3.org/2000/svg")
 
-mat_path = 'mat/raw_20.mat'
+input_file_name = 'shape_index_10'
+mat_path = 'mat/' + input_file_name + '.mat'
 x_axis_index = 0
 y_axis_index = 1
 digits = sio.loadmat(mat_path)
@@ -59,7 +81,7 @@ roman_label = ['I', 'II', 'III', 'IV']
 eigenvalues, eigenvectors = np.linalg.eig(np.cov(X))  # values: nx1/67x1, vectors: nxn/67x67
 
 U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=True)  # u: mxm, s: mx1, v:nxn/67x67
-# s[2:] = 0
+# s[:2] = 0
 
 fig = plt.figure(figsize=(20, 20))
 fig.subplots_adjust(bottom=0.05)
@@ -67,6 +89,7 @@ fig.subplots_adjust(top=0.95)
 fig.subplots_adjust(left=0.05)
 fig.subplots_adjust(right=0.95)
 fig.subplots_adjust(hspace=0.25)
+lo_index = 0.02  # label_offset_index
 
 ax = fig.add_subplot(321)
 ax.imshow(X.transpose())
@@ -78,6 +101,8 @@ ax = fig.add_subplot(322)
 ax.bar(np.arange(len(s)), s)
 ax.set_title('singular_values_feature')
 
+current = 0
+feature_list = generate_feature_list()
 small_edge_index = 0.1
 ax = fig.add_subplot(323)
 ax.grid(True, which='both', color='#CFCFCF')
@@ -100,6 +125,24 @@ for i in range(xx.shape[0]):
         ax.text(xx[i], yy[i], '.', fontdict={'size': 10})
     else:
         ax.text(xx[i], yy[i], str(i), fontdict={'size': 8})
+    if 'feature' in input_file_name:
+        lo_v = (max(yy) - min(yy)) * lo_index
+        lo_h = (max(xx) - min(xx)) * lo_index
+
+        # dot
+        plt.plot(xx[i], yy[i], '.', gid='mypatch_{:03d}'.format(current))
+
+        # tooltip
+        label = feature_list[i]
+        annotate = ax.annotate(label, xy=(xx[i], yy[i] - lo_v * 3), xytext=(0, 0),
+                               textcoords='offset points', color='w', ha='right',
+                               fontsize=9, bbox=dict(boxstyle='round, pad=.5',
+                                                     fc=(.1, .1, .1, .92),
+                                                     ec=(1., 1., 1.), lw=1,
+                                                     zorder=3))
+        annotate.set_gid('mytooltip_{:03d}'.format(current))
+        annotate.get_bbox_patch().set_gid('myimage_{:03d}'.format(current))
+        current += 1
 ax.set_title('features_projection')
 
 ax = fig.add_subplot(324)
@@ -125,13 +168,30 @@ for i in range(xx.shape[0]):
         ax.text(xx[i], yy[i], '.', fontdict={'size': 10})
     else:
         ax.text(xx[i], yy[i], str(i), fontdict={'size': 8})
+    if 'feature' in input_file_name:
+        lo_v = (max(yy) - min(yy)) * lo_index
+        lo_h = (max(xx) - min(xx)) * lo_index
+
+        # dot
+        plt.plot(xx[i], yy[i], '.', gid='mypatch_{:03d}'.format(current))
+
+        # tooltip
+        label = feature_list[i]
+        annotate = ax.annotate(label, xy=(xx[i], yy[i] - lo_v * 3), xytext=(0, 0),
+                               textcoords='offset points', color='w', ha='right',
+                               fontsize=9, bbox=dict(boxstyle='round, pad=.5',
+                                                     fc=(.1, .1, .1, .92),
+                                                     ec=(1., 1., 1.), lw=1,
+                                                     zorder=3))
+        annotate.set_gid('mytooltip_{:03d}'.format(current))
+        annotate.get_bbox_patch().set_gid('myimage_{:03d}'.format(current))
+        current += 1
 ax.set_title('features_correlation')
 
 eigenvalues, eigenvectors = np.linalg.eig(np.cov(X.transpose()))  # values: mx1/12x1, vectors: mxm/12x12
 U, s, Vh = np.linalg.svd(X, full_matrices=True)  # u: nxn/67x67, s: mx1, v:mxm
 # s[2:] = 0
 
-lo_index = 0.02  # label_offset_index
 
 ax = fig.add_subplot(325)
 ax.grid(True, which='both', color='#CFCFCF')
@@ -156,7 +216,6 @@ ax.set_xlim(min(xx) - small_edge,
 lo_v = (max(yy) - min(yy)) * lo_index
 lo_h = (max(xx) - min(xx)) * lo_index
 
-current = 0
 for i in range(X.shape[0]):
     # dot and text
     plt.plot(xx[i], yy[i], '.', color=plt.cm.tab10(int(y[i])), gid='mypatch_{:03d}'.format(current))
@@ -300,4 +359,4 @@ script = """
 
 # Insert the script at the top of the file and save it.
 tree.insert(0, ET.XML(script))
-ET.ElementTree(tree).write('svg_tooltip.svg')
+ET.ElementTree(tree).write('svd_' + input_file_name + '_' + str(x_axis_index) + '_' + str(y_axis_index) + '.svg')
