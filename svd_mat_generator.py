@@ -26,11 +26,6 @@ def read_img_random(path, total_count, as_gray=False):
             im = file_path_list[count]
             count += 1
             img = io.imread(im, as_gray=as_gray)
-            # for angle in [0,90,180,270]:
-            #     _img = transform.rotate(img, angle)
-            #     _img = transform.resize(_img, (w, h))
-            #     imgs.append(_img)
-            #     labels.append(idx)
             img = transform.resize(img, (w, h), anti_aliasing=True)
             imgs.append(img)
             labels.append(idx)
