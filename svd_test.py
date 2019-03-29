@@ -80,7 +80,7 @@ roman_label = ['I', 'II', 'III', 'IV']
 
 eigenvalues, eigenvectors = np.linalg.eig(np.cov(X))  # values: nx1/67x1, vectors: nxn/67x67
 
-U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=True)  # u: mxm, s: mx1, v:nxn/67x67
+U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=False)  # u: mxm, s: mx1, v:nxn/67x67
 # s[:2] = 0
 
 fig = plt.figure(figsize=(20, 20))
@@ -110,8 +110,8 @@ ax.axhline(y=0, color='k')
 ax.axvline(x=0, color='k')
 plt.xlabel('Projection on {}'.format(x_axis_index + 1))
 plt.ylabel('Projection on {}'.format(y_axis_index + 1))
-ev1 = Vh.transpose()[x_axis_index].real  # ev: nx1/67x1
-ev2 = Vh.transpose()[y_axis_index].real
+ev1 = np.absolute(Vh[x_axis_index])
+ev2 = np.absolute(Vh[y_axis_index])
 xx = X.transpose().dot(ev1)  # mxn.nx1 = mx1
 yy = X.transpose().dot(ev2)
 small_edge = (max(yy) - min(yy)) * small_edge_index
@@ -152,7 +152,7 @@ ax.axvline(x=0, color='k')
 plt.xlabel('Correlation on {}'.format(x_axis_index + 1))
 plt.ylabel('Correlation on {}'.format(y_axis_index + 1))
 s_x = preprocessing.normalize(X.transpose())
-normalized_vh = preprocessing.normalize(Vh.real.transpose())
+normalized_vh = preprocessing.normalize(np.absolute(Vh))
 s_ev1 = normalized_vh[x_axis_index]
 s_ev2 = normalized_vh[y_axis_index]
 xx = s_x.dot(s_ev1)
@@ -199,8 +199,8 @@ ax.axhline(y=0, color='k')
 ax.axvline(x=0, color='k')
 plt.xlabel('Projection on {}'.format(x_axis_index + 1))
 plt.ylabel('Projection on {}'.format(y_axis_index + 1))
-ev1 = Vh.transpose()[x_axis_index].real  # ev: nx1/67x1
-ev2 = Vh.transpose()[y_axis_index].real
+ev1 = np.absolute(Vh[x_axis_index])
+ev2 = np.absolute(Vh[y_axis_index])
 xx = X.dot(ev1)  # nxm.mx1=nx1
 yy = X.dot(ev2)
 small_edge = (max(yy) - min(yy)) * small_edge_index
@@ -252,7 +252,7 @@ ax.axvline(x=0, color='k')
 plt.xlabel('Correlation on {}'.format(x_axis_index + 1))
 plt.ylabel('Correlation on {}'.format(y_axis_index + 1))
 s_x = preprocessing.normalize(X)
-normalized_vh = preprocessing.normalize(Vh.real.transpose())
+normalized_vh = preprocessing.normalize(np.absolute(Vh))
 s_ev1 = normalized_vh[x_axis_index]
 s_ev2 = normalized_vh[y_axis_index]
 xx = s_x.dot(s_ev1)
