@@ -13,6 +13,7 @@ import os
 from skimage import io, transform
 import xml.etree.ElementTree as ET
 from io import BytesIO
+import sys
 
 
 def getImage2(img, zoom=1.0):
@@ -69,9 +70,15 @@ raw_img, raw_file_names = read_img_random(raw_root, 1000)
 ET.register_namespace("", "http://www.w3.org/2000/svg")
 
 input_file_name = 'shape_index_10'
-mat_path = 'mat/' + input_file_name + '.mat'
 x_axis_index = 0
 y_axis_index = 1
+
+if len(sys.argv) >= 4:
+    input_file_name = sys.argv[1]
+    x_axis_index = int(sys.argv[2])
+    y_axis_index = int(sys.argv[3])
+
+mat_path = 'mat/' + input_file_name + '.mat'
 digits = sio.loadmat(mat_path)
 X, y = digits.get('feature_matrix'), digits.get('label')[0]  # X: nxm: n=67//sample, m=12,10,71,400//feature
 file_names, indexes = digits.get('file_name'), digits.get('index')[0]
