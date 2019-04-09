@@ -1,12 +1,13 @@
-from skimage import io
-from skimage.transform import resize
-from skimage.color import rgb2hed
-from skimage.exposure import rescale_intensity
 import glob
 import os
+
 import numpy as np
-from skimage.morphology import disk
+from skimage import io
+from skimage.color import rgb2hed
+from skimage.exposure import rescale_intensity
 from skimage.filters import rank
+from skimage.morphology import disk
+from skimage.transform import resize
 
 # 数据集地址
 image_path = r'C:\Users\bunny\Desktop\_Training_Data\sub_mean_images\all/'
@@ -92,6 +93,9 @@ def subtract_mean_img(path, disk_size=50):
         if count % 10 == 0:
             print("\rreading {0}/{1}".format(count, len(file_path_list)), end='')
 
-# resize_img(image_path, w, h)
+
+for i in range(4):
+    image_path = r'D:\Projects\pompeii\20190405\svd_test/' + str(i + 1) + '/'
+    resize_img(image_path, 0, 0)
 # stain_separate_image(image_path)
-subtract_mean_img(image_path, 10)
+# subtract_mean_img(image_path, 10)
