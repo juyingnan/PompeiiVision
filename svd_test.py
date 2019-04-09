@@ -366,4 +366,4 @@ script = """
 
 # Insert the script at the top of the file and save it.
 tree.insert(0, ET.XML(script))
-ET.ElementTree(tree).write('svd_' + input_file_name + '_' + str(x_axis_index) + '_' + str(y_axis_index) + '.svg')
+ET.ElementTree(tree).write('svg/svd_' + input_file_name + '_' + str(x_axis_index) + '_' + str(y_axis_index) + '.svg')
