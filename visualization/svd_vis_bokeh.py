@@ -30,8 +30,6 @@ def append_feature(result_list, feature_name, feature_count):
         result_list.append(feature_name + ' ' + str(feature_count + 1))
 
 
-raw_root = r'D:\Projects\pompeii\20190405\svd_500/'
-
 input_file_name = 'shape_index_10'
 axis_threshold = 5
 
