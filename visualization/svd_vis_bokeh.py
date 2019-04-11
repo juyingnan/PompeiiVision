@@ -6,33 +6,7 @@ from bokeh.plotting import figure
 from bokeh.transform import factor_mark, factor_cmap
 from scipy import io as sio
 from sklearn import preprocessing
-from skimage import io, transform
 import sys
-import os
-
-
-def read_img_random(path, total_count):
-    cate = [path + folder for folder in os.listdir(path) if os.path.isdir(path + folder)]
-    imgs = []
-    labels = []
-    for idx, folder in enumerate(cate):
-        print('reading the images:%s' % folder)
-        count = 0
-        file_path_list = [os.path.join(folder, file_name) for file_name in os.listdir(folder)
-                          if os.path.isfile(os.path.join(folder, file_name))]
-        while count < total_count and count < len(file_path_list):
-            im = file_path_list[count]
-            count += 1
-            img = io.imread(im)
-            if img.shape[2] == 4:
-                img = img[:, :, :3]
-            img = transform.rescale(img, 1.0 / 5.0, anti_aliasing=True)
-            imgs.append(img)
-            labels.append(im.split('\\')[-1])
-            if count % 100 == 0:
-                print("\rreading {0}/{1}".format(count, min(total_count, len(file_path_list))), end='')
-        print('\r', end='')
-    return imgs, labels
 
 
 def generate_feature_list():
@@ -57,12 +31,11 @@ def append_feature(result_list, feature_name, feature_count):
 
 
 raw_root = r'D:\Projects\pompeii\20190405\svd_500/'
-raw_img, raw_file_names = read_img_random(raw_root, 1000)
 
 input_file_name = 'shape_index_10'
 axis_threshold = 5
 
-if len(sys.argv) >= 4:
+if len(sys.argv) >= 2:
     input_file_name = sys.argv[1]
 
 mat_path = '../mat/' + input_file_name + '.mat'
