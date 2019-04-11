@@ -60,14 +60,10 @@ raw_root = r'D:\Projects\pompeii\20190405\svd_500/'
 raw_img, raw_file_names = read_img_random(raw_root, 1000)
 
 input_file_name = 'shape_index_10'
-x_axis_index = 0
-y_axis_index = 1
 axis_threshold = 5
 
 if len(sys.argv) >= 4:
     input_file_name = sys.argv[1]
-    x_axis_index = int(sys.argv[2])
-    y_axis_index = int(sys.argv[3])
 
 mat_path = '../mat/' + input_file_name + '.mat'
 digits = sio.loadmat(mat_path)
@@ -76,7 +72,7 @@ file_names, indexes = digits.get('file_name'), digits.get('index')[0]
 n_samples, n_features = X.shape
 roman_label = ['I', 'II', 'III', 'IV']
 markers = ['hex', 'triangle', 'circle', 'cross', 'diamond', 'square', 'x', 'inverted_triangle']
-output_file('result/svd_' + input_file_name + '_' + str(x_axis_index) + '_' + str(y_axis_index) + '.html')
+output_file('result/svd_' + input_file_name + '.html')
 
 # plot tools
 tools_list = "pan," \
@@ -120,58 +116,60 @@ feature_data = {'current_projection_x': xx_feature_projection_list[0],
 #     feature_data[]
 feature_source = ColumnDataSource(data=feature_data)
 
-# controls
-feature_x = '1'
-feature_y = '2'
-
-feature_x_dict = {}
-feature_y_dict = {}
-for j in range(axis_threshold):
-    feature_x_dict[str(j + 1)] = j
-    feature_y_dict[str(j + 1)] = j
-
-feature_axis_x_select = Select(value=feature_x, title='X-axis', options=sorted(feature_x_dict.keys()))
-feature_axis_y_select = Select(value=feature_y, title='Y-axis', options=sorted(feature_x_dict.keys()))
-
-feature_axis_x_select.js_on_change('value',
-                                   CustomJS(args=dict(labels=feature_x_dict, source=feature_source,
-                                                      projection_pool=xx_feature_projection_list,
-                                                      correlation_pool=xx_feature_correlation_list), code="""
-    var index = labels[cb_obj.value];
-    console.log(index);
-    var data = source.data;
-    data['current_projection_x'] = projection_pool[index]
-    data['current_correlation_x'] = correlation_pool[index]
-    source.change.emit();
-
-    """))
-feature_axis_y_select.js_on_change('value',
-                                   CustomJS(args=dict(labels=feature_y_dict, source=feature_source,
-                                                      projection_pool=xx_feature_projection_list,
-                                                      correlation_pool=xx_feature_correlation_list), code="""
-    var index = labels[cb_obj.value];
-    console.log(index);
-    var data = source.data;
-    data['current_projection_y'] = projection_pool[index]
-    data['current_correlation_y'] = correlation_pool[index]
-    source.change.emit();
-
-    """))
-feature_controls = column(feature_axis_x_select, feature_axis_y_select)
 
 # feature vis
-feature_left = figure(title="features projection", tools=tools_list)
-feature_left.xaxis.axis_label = 'Projection on {}'.format(x_axis_index)
-feature_left.yaxis.axis_label = 'Projection on {}'.format(y_axis_index)  # highlight x y axes
-feature_left.renderers.extend([vline, hline])
-feature_left.scatter("current_projection_x", "current_projection_y", source=feature_source, fill_alpha=0.4, size=12)
+def create_feature_scatter(x_data, y_data, source, title='', x_axis_title='', y_axis_title=''):
+    result_plot = figure(title=title, tools=tools_list)
+    result_plot.xaxis.axis_label = x_axis_title
+    result_plot.yaxis.axis_label = y_axis_title
+    result_plot.scatter(x_data, y_data, source=source, fill_alpha=0.4, size=12)
+    # highlight x y axes
+    result_plot.renderers.extend([vline, hline])
+    return result_plot
 
-feature_right = figure(title="features correlation", tools=tools_list)
-feature_right.xaxis.axis_label = 'Correlation on {}'.format(x_axis_index)
-feature_right.yaxis.axis_label = 'Correlation on {}'.format(y_axis_index)
-feature_right.renderers.extend([vline, hline])
-feature_right.scatter("current_correlation_x", "current_correlation_y",
-                      source=feature_source, fill_alpha=0.4, size=12)
+
+default_x_index = '1'
+default_y_index = '2'
+feature_left = create_feature_scatter(x_data="current_projection_x", y_data="current_projection_y",
+                                      source=feature_source,
+                                      title="features projection",
+                                      x_axis_title='Projection on {}'.format(default_x_index),
+                                      y_axis_title='Projection on {}'.format(default_y_index))
+feature_right = create_feature_scatter(x_data="current_correlation_x", y_data="current_correlation_y",
+                                       source=feature_source,
+                                       title="features correlation",
+                                       x_axis_title='Correlation on {}'.format(default_x_index),
+                                       y_axis_title='Correlation on {}'.format(default_y_index))
+
+# controls
+feature_selection_dict = {}
+for j in range(axis_threshold):
+    feature_selection_dict[str(j + 1)] = j
+
+feature_axis_x_select = Select(value=default_x_index, title='X-axis', options=sorted(feature_selection_dict.keys()))
+feature_axis_y_select = Select(value=default_y_index, title='Y-axis', options=sorted(feature_selection_dict.keys()))
+code = """
+    var index = labels[cb_obj.value];
+    console.log(index);
+    var data = source.data;
+    data['current_projection_'+ key] = projection_pool[index]
+    data['current_correlation_'+ key] = correlation_pool[index]
+    axis[0].axis_label = "Projection on " + cb_obj.value;
+    axis[1].axis_label = "Correlation on " + cb_obj.value;
+    source.change.emit();
+    """
+feature_axis_x_select.js_on_change('value',
+                                   CustomJS(args=dict(key='x', labels=feature_selection_dict, source=feature_source,
+                                                      projection_pool=xx_feature_projection_list,
+                                                      correlation_pool=xx_feature_correlation_list,
+                                                      axis=[feature_left.xaxis[0], feature_right.xaxis[0]]), code=code))
+feature_axis_y_select.js_on_change('value',
+                                   CustomJS(args=dict(key='y', labels=feature_selection_dict, source=feature_source,
+                                                      projection_pool=xx_feature_projection_list,
+                                                      correlation_pool=xx_feature_correlation_list,
+                                                      axis=[feature_left.yaxis[0], feature_right.yaxis[0]]),
+                                            code=code))
+feature_controls = column(feature_axis_x_select, feature_axis_y_select)
 
 # SAMPLE
 xx_sample_projection_list = list()
@@ -226,47 +224,8 @@ custom_tooltip = """
     </div>
 """
 
-# controls
-sample_x = '1'
-sample_y = '2'
 
-sample_x_dict = {}
-sample_y_dict = {}
-for j in range(axis_threshold):
-    sample_x_dict[str(j + 1)] = j
-    sample_y_dict[str(j + 1)] = j
-
-sample_axis_x_select = Select(value=sample_x, title='X-axis', options=sorted(sample_x_dict.keys()))
-sample_axis_y_select = Select(value=sample_y, title='Y-axis', options=sorted(sample_x_dict.keys()))
-
-sample_axis_x_select.js_on_change('value',
-                                  CustomJS(args=dict(labels=sample_x_dict, source=sample_source,
-                                                     projection_pool=xx_sample_projection_list,
-                                                     correlation_pool=xx_sample_correlation_list), code="""
-    var index = labels[cb_obj.value];
-    console.log(index);
-    var data = source.data;
-    data['current_projection_x'] = projection_pool[index]
-    data['current_correlation_x'] = correlation_pool[index]
-    source.change.emit();
-    
-    """))
-sample_axis_y_select.js_on_change('value',
-                                  CustomJS(args=dict(labels=sample_y_dict, source=sample_source,
-                                                     projection_pool=xx_sample_projection_list,
-                                                     correlation_pool=xx_sample_correlation_list), code="""
-    var index = labels[cb_obj.value];
-    console.log(index);
-    var data = source.data;
-    data['current_projection_y'] = projection_pool[index]
-    data['current_correlation_y'] = correlation_pool[index]
-    source.change.emit();
-
-    """))
-sample_controls = column(sample_axis_x_select, sample_axis_y_select)
-
-
-def create_scatter(x_data, y_data, source, title='', x_axis_title='', y_axis_title=''):
+def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_axis_title=''):
     result_plot = figure(title=title, tools=tools_list, tooltips=custom_tooltip)
     result_plot.xaxis.axis_label = x_axis_title
     result_plot.yaxis.axis_label = y_axis_title
@@ -294,13 +253,31 @@ def create_scatter(x_data, y_data, source, title='', x_axis_title='', y_axis_tit
 # sample vis
 sample_plot_list = list()
 sample_plot_list.append(
-    create_scatter(x_data="current_projection_x", y_data="current_projection_y", source=sample_source,
-                   title="samples projection", x_axis_title='Projection on {}'.format(x_axis_index),
-                   y_axis_title='Projection on {}'.format(y_axis_index)))
+    create_sample_scatter(x_data="current_projection_x", y_data="current_projection_y", source=sample_source,
+                          title="samples projection", x_axis_title='Projection on {}'.format(default_x_index),
+                          y_axis_title='Projection on {}'.format(default_y_index)))
 sample_plot_list.append(
-    create_scatter(x_data="current_correlation_x", y_data="current_correlation_y", source=sample_source,
-                   title="samples correlation", x_axis_title='Correlation on {}'.format(x_axis_index),
-                   y_axis_title='Correlation on {}'.format(y_axis_index)))
+    create_sample_scatter(x_data="current_correlation_x", y_data="current_correlation_y", source=sample_source,
+                          title="samples correlation", x_axis_title='Correlation on {}'.format(default_x_index),
+                          y_axis_title='Correlation on {}'.format(default_y_index)))
+
+# controls
+sample_axis_x_select = Select(value=default_x_index, title='X-axis', options=sorted(feature_selection_dict.keys()))
+sample_axis_y_select = Select(value=default_y_index, title='Y-axis', options=sorted(feature_selection_dict.keys()))
+
+sample_axis_x_select.js_on_change('value',
+                                  CustomJS(args=dict(key='x', labels=feature_selection_dict, source=sample_source,
+                                                     projection_pool=xx_sample_projection_list,
+                                                     correlation_pool=xx_sample_correlation_list,
+                                                     axis=[sample_plot_list[0].xaxis[0], sample_plot_list[1].xaxis[0]]),
+                                           code=code))
+sample_axis_y_select.js_on_change('value',
+                                  CustomJS(args=dict(key='y', labels=feature_selection_dict, source=sample_source,
+                                                     projection_pool=xx_sample_projection_list,
+                                                     correlation_pool=xx_sample_correlation_list,
+                                                     axis=[sample_plot_list[0].yaxis[0], sample_plot_list[1].yaxis[0]]),
+                                           code=code))
+sample_controls = column(sample_axis_x_select, sample_axis_y_select)
 
 p = gridplot([[feature_left, feature_right, feature_controls],
               [sample_plot_list[0], sample_plot_list[1], sample_controls]])
