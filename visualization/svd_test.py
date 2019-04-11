@@ -65,7 +65,7 @@ def append_feature(result_list, feature_name, feature_count):
         result_list.append(feature_name + ' ' + str(feature_count + 1))
 
 
-raw_root = r'D:\Projects\pompeii\20190319\svd_test/'
+raw_root = r'D:\Projects\pompeii\20190405\svd_500/'
 raw_img, raw_file_names = read_img_random(raw_root, 1000)
 ET.register_namespace("", "http://www.w3.org/2000/svg")
 
