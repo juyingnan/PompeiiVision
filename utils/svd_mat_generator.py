@@ -5,7 +5,7 @@ from scipy import io as sio
 from skimage import io, transform
 
 import feature_test
-import k_means_test
+from classification import k_means_test
 
 
 def read_img_random(path, total_count, as_gray=False, resize=None):
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     h = w
     c = 3
     train_image_count = 10000
-    train_path = r'D:\Projects\pompeii\20190405\svd_500/'
+    train_path = r'D:\Projects\pompeii\20190405\svd_500_submean/'
     for is_gray in [True, False]:
         train_data, train_label, train_file_paths, train_indexes = read_img_random(train_path, train_image_count,
                                                                                    as_gray=is_gray, resize=(h, w))

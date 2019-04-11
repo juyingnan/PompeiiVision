@@ -95,7 +95,7 @@ def subtract_mean_img(path, disk_size=50):
 
 
 for i in range(4):
-    image_path = r'D:\Projects\pompeii\20190405\svd_test/' + str(i + 1) + '/'
-    resize_img(image_path, 0, 0)
-# stain_separate_image(image_path)
-# subtract_mean_img(image_path, 10)
+    image_path = r'D:\Projects\pompeii\20190405\svd_500_submean/' + str(i + 1) + '/'
+    # resize_img(image_path, 0, 0)
+    # stain_separate_image(image_path)
+    subtract_mean_img(image_path, 10)
