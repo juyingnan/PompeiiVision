@@ -1,5 +1,6 @@
 import csv
 from collections import OrderedDict
+import itertools
 
 
 def read_csv(path):
@@ -64,23 +65,53 @@ def count_match(ref_set, match_set):
     return len(intersect)
 
 
-def find_best_match_cat4(ref_sets, match_sets):
+def most_frequent(_list):
+    return max(set(_list), key=_list.count)
+
+
+def find_best_match_cats(ref_sets, match_sets, repeat=True):
+    ref_cat_count = len(ref_sets)
+    match_cat_count = len(match_sets)
     best_match = []
     best_match_count = 0
-    for i in range(4):
-        for j in range(4):
-            for m in range(4):
-                for n in range(4):
-                    index_list = [i, j, m, n]
-                    index_set = set(index_list)
-                    if len(index_set) == 4:
-                        match_count = 0
-                        for k in range(4):
-                            match_count += count_match(ref_sets[k], match_sets[index_list[k]])
-                        if match_count >= best_match_count:
-                            best_match_count = match_count
-                            best_match = index_list
-                        # print(index_list, match_count)
+    for index_list in itertools.product(range(ref_cat_count), repeat=match_cat_count):
+        index_set = set(index_list)
+        if repeat or len(index_set) == ref_cat_count:
+            match_count = 0
+            for k in range(match_cat_count):
+                match_count += count_match(ref_sets[index_list[k]], match_sets[k])
+            if match_count >= best_match_count:
+                best_match_count = match_count
+                best_match = index_list
+            # print(index_list, match_count)
+    max_match_count = count_match([item for ref_set in ref_sets for item in ref_set],
+                                  [item for match_set in match_sets for item in match_set])
+    print(best_match, '{0} / {1}'.format(best_match_count, max_match_count))
+    return best_match
+
+
+def find_best_match_cats2(ref_sets, match_sets, repeat=True):
+    ref_cat_count = len(ref_sets)
+    match_cat_count = len(match_sets)
+    best_match = []
+    best_match_count = 0
+    if repeat:
+        for i in range(match_cat_count):
+            max_match_groups = [count_match(ref_set, match_sets[i]) for ref_set in ref_sets]
+            best_match.append(max_match_groups.index(max(max_match_groups)))
+            best_match_count += count_match(ref_sets[best_match[-1]], match_sets[i])
+    else:
+        assert ref_cat_count == match_cat_count
+        for index_list in itertools.product(range(ref_cat_count), repeat=match_cat_count):
+            index_set = set(index_list)
+            if len(index_set) == ref_cat_count:
+                match_count = 0
+                for k in range(match_cat_count):
+                    match_count += count_match(ref_sets[index_list[k]], match_sets[k])
+                if match_count >= best_match_count:
+                    best_match_count = match_count
+                    best_match = index_list
+                # print(index_list, match_count)
     max_match_count = count_match([item for ref_set in ref_sets for item in ref_set],
                                   [item for match_set in match_sets for item in match_set])
     print(best_match, '{0} / {1}'.format(best_match_count, max_match_count))
@@ -139,22 +170,71 @@ def find_route(ref_sets, match_sets, match_seq, ref_set_title='ref', matched_set
         print(line)
 
 
+def find_route2(ref_sets, match_sets, match_seq, ref_set_title='ref', matched_set_title='matched',
+                sankeymatic_output_format=False):
+    # http://sankeymatic.com/build/
+    # output format
+    ref_length_list = [len(ref_set) for ref_set in ref_sets]
+    matched_length_list = [len(match_set) for match_set in match_sets]
+    print(ref_set_title, "_length_list", ref_length_list)
+    print(matched_set_title, "_length_list", matched_length_list)
+    print('from {0} => {1}:'.format(ref_set_title, matched_set_title))
+    for i in range(len(ref_sets)):
+        ref_set = ref_sets[i]
+        for j in range(len(match_sets)):
+            matched_set = match_sets[j]
+            if sankeymatic_output_format:
+                print('{0}-{1} [{4}] {2}-{3}'.format(ref_set_title, write_roman(i + 1),
+                                                     matched_set_title, write_roman(match_seq[j] + 1),
+                                                     count_match(ref_set, matched_set))) \
+                    if count_match(ref_set, matched_set) > 0 else None
+            else:
+                print('{0}:{1} => {2}:{3}'.format(ref_set_title, i, matched_set_title, j),
+                      '{0} / {1}'.format(count_match(ref_set, matched_set), ref_length_list[i]))
+    print('from {0} => {1}:'.format(matched_set_title, ref_set_title))
+    for i in range(len(match_sets)):
+        matched_set = match_sets[i]
+        for j in range(len(ref_sets)):
+            ref_set = ref_sets[j]
+            if sankeymatic_output_format:
+                print('{0}-{1} [{4}] {2}-{3}'.format(matched_set_title, write_roman(match_seq[j] + 1),
+                                                     ref_set_title, write_roman(j + 1),
+                                                     count_match(ref_set, matched_set))) \
+                    if count_match(ref_set, matched_set) > 0 else None
+            else:
+                print('{0}:{1} => {2}:{3}'.format(matched_set_title, i, ref_set_title, j),
+                      '{0} / {1}'.format(count_match(ref_set, matched_set), matched_length_list[i]))
+
+    # matching matrix printing
+    head = ''
+    for j in range(len(match_sets)):
+        head += '\t{0}-{1}'.format(matched_set_title, write_roman(j + 1))
+    print(head)
+    for i in range(len(ref_sets)):
+        ref_set = ref_sets[i]
+        line = '{0}-{1}'.format(ref_set_title, write_roman(i + 1))
+        for j in range(len(match_sets)):
+            matched_set = match_sets[j]
+            line += '\t{0}'.format(count_match(ref_set, matched_set))
+        print(line)
+
+
 if __name__ == '__main__':
     # read scv
-    csv_path = 'csv/1st_4.csv'
+    csv_path = '../csv/1st_4.csv'
 
     # assign sets and lists
     # human_cat, kmeans_cat, ae_cat = read_csv(csv_path)
-    human_cat = read_csv('csv/human_4.csv')
-    kmeans_cat = read_csv('csv/kmeans_4.csv')
-    ae_cat = read_csv('csv/ae_4.csv')
-    hierarchical_cat = read_csv('csv/hierarchical_4.csv')
+    human_cat = read_csv('../csv/human_4.csv')
+    kmeans_cat = read_csv('../csv/kmeans_4.csv')
+    ae_cat = read_csv('../csv/ae_4.csv')
+    hierarchical_cat = read_csv('../csv/hierarchical_4.csv')
 
     # find best match
-    human_kmeans_match = find_best_match_cat4(human_cat, kmeans_cat)
-    human_hierarchical_match = find_best_match_cat4(human_cat, hierarchical_cat)
-    human_ae_match = find_best_match_cat4(human_cat, ae_cat)
-    kmeans_hierarchical_match = find_best_match_cat4(kmeans_cat, hierarchical_cat)
+    human_kmeans_match = find_best_match_cats(human_cat, kmeans_cat)
+    human_hierarchical_match = find_best_match_cats(human_cat, hierarchical_cat)
+    human_ae_match = find_best_match_cats(human_cat, ae_cat)
+    kmeans_hierarchical_match = find_best_match_cats(kmeans_cat, hierarchical_cat)
 
     # find route from best match
     print('****************')
