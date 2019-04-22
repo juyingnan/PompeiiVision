@@ -274,7 +274,7 @@ if __name__ == '__main__':
     hierarchical_cat = ClusterMatching.read_csv(csv_path)
 
     # find best match
-    human_hierarchical_match = ClusterMatching.find_best_match_cat4(human_cat, hierarchical_cat)
+    human_hierarchical_match = ClusterMatching.find_best_match_cats(human_cat, hierarchical_cat)
 
     # find route from best match
     print('****************')
