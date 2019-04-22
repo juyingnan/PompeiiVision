@@ -1,3 +1,6 @@
+# source:
+# https://scikit-image.org/docs/dev/auto_examples/segmentation/plot_segmentations.html
+
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage import io
@@ -6,7 +9,7 @@ from skimage.color import rgb2gray
 from skimage.filters import sobel
 from skimage.segmentation import felzenszwalb, slic, quickshift, watershed
 from skimage.segmentation import mark_boundaries
-from skimage.util import img_as_float
+# from skimage.util import img_as_float
 
 file_path = r'D:\Projects\pompeii\20190405\svd_500\4\_593_G_Discanno_Terme_del_Sarno_third_lower_story_frigidarium_back_wall.jpg'
 img = io.imread(file_path)
