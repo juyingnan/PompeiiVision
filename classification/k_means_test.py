@@ -2,10 +2,12 @@ from sklearn import cluster
 # from sklearn.neighbors import kneighbors_graph
 # import random
 import os
+import sys
 import shutil
 from skimage import io, transform, color, exposure, segmentation, feature
 import numpy as np
 import csv
+from scipy import io as sio
 
 width = 250
 height = 250
@@ -17,11 +19,13 @@ sift_feature_count = 12
 upper_index = 0.35
 lower_index = 0.2
 lr_index = 0.2
+roman_label = ['I', 'II', 'III', 'IV']
 
 
 def read_img_random(path, total_count):
-    file_path_list = [os.path.join(path, file_name) for file_name in os.listdir(path)
-                      if os.path.isfile(os.path.join(path, file_name))]
+    file_path_list = list()
+    for (dirpath, dirnames, filenames) in os.walk(path):
+        file_path_list += [os.path.join(dirpath, file) for file in filenames]
     # print(file_path_list[0:3])
     # random.shuffle(file_path_list)
     imgs = []
@@ -29,6 +33,7 @@ def read_img_random(path, total_count):
 
     count = 0
     # print(file_path_list[0:3])
+
     while count < total_count and count < len(file_path_list):
         im = file_path_list[count]
         file_name = im.split('/')[-1]
@@ -55,7 +60,7 @@ def make_dir(path):
 
 def write_csv(img_name_list, cat_list, path):
     with open(path, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(csvfile, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow((["NAME", "KMEANS_CAT{0}".format(cluster_number)]))
         lines = []
         for i in range(len(img_name_list)):
@@ -436,7 +441,7 @@ def get_more_sift_features(data, sift_n_largest=True, sift_count=False, sift_lar
     return result
 
 
-def k_means_clustering(data, path='', log=True, classify_folder=True):
+def k_means_clustering(data, labels, path='', log=True, classify_folder=False):
     print("Compute K-means clustering...")
     k_means = cluster.KMeans(n_clusters=cluster_number)
     k_means.fit(data)
@@ -444,29 +449,29 @@ def k_means_clustering(data, path='', log=True, classify_folder=True):
         # print(k_means.labels_)
         # print(train_label)
         for k in range(len(k_means.labels_)):
-            print(str(k_means.labels_[k] + 1) + '\t' + train_label[k])
-    if classify_folder:
-        classify_images(train_path, cluster_number, k_means.labels_, train_label)
+            print('{}\t{}'.format(str(k_means.labels_[k] + 1), labels[k]))
+    # if classify_folder:
+    #     classify_images(train_path, cluster_number, k_means.labels_, labels)
     if path == '':
-        write_csv(train_label, k_means.labels_ + 1, path='csv/kmeans_{0}.csv'.format(cluster_number))
+        write_csv(labels, k_means.labels_ + 1, path='../csv/kmeans_{0}.csv'.format(cluster_number))
     else:
-        write_csv(train_label, k_means.labels_ + 1, path=path)
+        write_csv(labels, k_means.labels_ + 1, path=path)
 
 
-def hierarchical_clustering(data, path='', log=True, classify_folder=True):
+def hierarchical_clustering(data, labels, path='', log=True, classify_folder=False):
     print("Compute unstructured hierarchical clustering...")
     # connectivity = kneighbors_graph(data, n_neighbors=5, include_self=False)
     ward = cluster.AgglomerativeClustering(n_clusters=cluster_number,  # connectivity=connectivity,
                                            linkage='ward').fit(data)
     if log:
         for k in range(len(ward.labels_)):
-            print(str(ward.labels_[k] + 1) + '\t' + train_label[k])
-    if classify_folder:
-        classify_images(train_path, cluster_number, ward.labels_, train_label)
+            print('{}\t{}'.format(str(ward.labels_[k] + 1), labels[k]))
+    # if classify_folder:
+    #     classify_images(train_path, cluster_number, ward.labels_, labels)
     if path == '':
-        write_csv(train_label, ward.labels_ + 1, path='csv/hierarchical_{0}.csv'.format(cluster_number))
+        write_csv(labels, ward.labels_ + 1, path='csv/hierarchical_{0}.csv'.format(cluster_number))
     else:
-        write_csv(train_label, ward.labels_ + 1, path=path)
+        write_csv(labels, ward.labels_ + 1, path=path)
 
 
 def loop_run(data):
@@ -496,21 +501,24 @@ def loop_run(data):
 
 
 if __name__ == '__main__':
-    train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
-    train_image_count = 1000
-    train_data, train_label = read_img_random(train_path, train_image_count)
-
+    input_file_name = 'all_features'
+    if len(sys.argv) >= 2:
+        input_file_name = sys.argv[1]
+    mat_path = '../mat/' + input_file_name + '.mat'
+    digits = sio.loadmat(mat_path)
+    X, labels = digits.get('feature_matrix'), digits.get('label')[0]
+    file_names, indexes = digits.get('file_name'), digits.get('index')[0]
+    n_samples, n_features = X.shape
+    unique_names = list()
+    for style, index in zip(labels, indexes):
+        unique_names.append('{}-{}'.format(roman_label[style], index))
     # K-Means
     # loop_run(train_data)
 
-    d2_train_data = get_features(train_data, whole_image_sample=True, frame_sample=False, global_color=False,
-                                 composition=False, segment_color=False, sift=True)
-    # d2_train_data = get_more_sift_features(train_data, sift_n_largest=True, sift_count=False, sift_large_count=False,
-    #                                        sift_distribution=False)
-    # d2_train_data = get_raw_pixel_features(train_data)
-
-    k_means_clustering(d2_train_data)
-    hierarchical_clustering(d2_train_data)
+    k_means_clustering(X, unique_names, path='../csv/kmeans_{0}_{1}.csv'.format(cluster_number, input_file_name))
+    hierarchical_clustering(X, unique_names,
+                            path='../csv/hierarchical_{0}_{1}.csv'.format(cluster_number, input_file_name))
+    write_csv(unique_names, labels + 1, path='../csv/human_{}.csv'.format(cluster_number))
 
     # test
     # for t in range(100):
