@@ -4,10 +4,10 @@ from collections import OrderedDict
 import itertools
 
 
-def read_csv(path):
+def read_csv(path, delimiter='\t'):
     cat = 4
     with open(path, 'r') as csvfile:
-        reader = csv.reader(csvfile, delimiter='\t')
+        reader = csv.reader(csvfile, delimiter=delimiter)
         # skip header
         num_cols = len(next(reader))
 
@@ -80,7 +80,7 @@ def find_best_match_cats(ref_sets, match_sets, repeat=True):
         if repeat or len(index_set) == ref_cat_count:
             match_count = 0
             for k in range(match_cat_count):
-                match_count += count_match(ref_sets[index_list[k]], match_sets[k])
+                match_count += count_match(ref_sets[k], match_sets[index_list[k]])
             if match_count >= best_match_count:
                 best_match_count = match_count
                 best_match = index_list
@@ -143,7 +143,7 @@ def find_route(ref_sets, match_sets, match_seq, ref_set_title='ref', matched_set
             else:
                 print('{0}:{1} => {2}:{3}'.format(ref_set_title, i, matched_set_title, j),
                       '{0} / {1}'.format(count_match(ref_set, matched_set), ref_length_list[i]))
-    print(":Human-I #550000 >>\n:Human-II #77aa66>>\n:Human-III #002868>>\n:Human-IV #DDDD00 >>")
+    print(":Human-I #A5C9E1 >>\n:Human-II #FFCC9F>>\n:Human-III #ABD9AB>>\n:Human-IV #E77E7F >>")
     print('from {0} => {1}:'.format(matched_set_title, ref_set_title))
     for i in range(len(matched_sets)):
         matched_set = matched_sets[i]
@@ -157,7 +157,7 @@ def find_route(ref_sets, match_sets, match_seq, ref_set_title='ref', matched_set
             else:
                 print('{0}:{1} => {2}:{3}'.format(matched_set_title, i, ref_set_title, j),
                       '{0} / {1}'.format(count_match(ref_set, matched_set), matched_length_list[i]))
-    print(":Human-I #550000 <<\n:Human-II #77aa66<<\n:Human-III #002868<<\n:Human-IV #DDDD00<<")
+    print(":Human-I #A5C9E1 <<\n:Human-II #FFCC9F<<\n:Human-III #ABD9AB<<\n:Human-IV #E77E7F<<")
 
     # matching matrix printing
     head = ''
@@ -231,8 +231,8 @@ if __name__ == '__main__':
 
     # assign sets and lists
     # human_cat, kmeans_cat, ae_cat = read_csv(csv_path)
-    human_cat = read_csv('../csv/human_4.csv')
-    clustering_cat = read_csv(csv_path)
+    human_cat = read_csv('../csv/human_4.csv', delimiter='\t')
+    clustering_cat = read_csv(csv_path, delimiter='\t')
 
     # find best match
     human_clustering_match = find_best_match_cats(human_cat, clustering_cat, repeat=False)
