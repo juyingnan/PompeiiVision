@@ -3,7 +3,8 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
 import csv
-import random
+# import random
+from scipy import io as sio
 import shutil
 from skimage import io, transform
 from tensorflow.contrib.factorization.python.ops import clustering_ops
@@ -17,6 +18,7 @@ display_length = full_length
 channel = 3
 train_path = r'C:\Users\bunny\Desktop\test_20180919\unsupervised/'
 train_image_count = 1000
+emp = 1e-12
 
 cluster_number = 4
 
@@ -143,8 +145,8 @@ class VariationalAutoencoder(object):
         #     is given.
         # Adding 1e-10 to avoid evaluation of log(0.0)
         reconstr_loss = \
-            -tf.reduce_sum(self.x * tf.log(1e-7 + self.x_reconstr_mean)
-                           + (1 - self.x) * tf.log(1e-7 + 1 - self.x_reconstr_mean),
+            -tf.reduce_sum(self.x * tf.log(emp + self.x_reconstr_mean)
+                           + (1 - self.x) * tf.log(emp + 1 - self.x_reconstr_mean),
                            1)
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence
         ##    between the distribution in latent space induced by the encoder on
@@ -195,33 +197,21 @@ class VariationalAutoencoder(object):
                              feed_dict={self.x: X})
 
 
-def read_img_random(path, total_count, as_grey):
-    file_path_list = [os.path.join(path, file_name) for file_name in os.listdir(path)
-                      if os.path.isfile(os.path.join(path, file_name))]
-    # print(file_path_list[0:3])
-    random.shuffle(file_path_list)
-    imgs = []
-    labels = []
-
-    count = 0
-    # print(file_path_list[0:3])
-    while count < total_count and count < len(file_path_list):
-        im = file_path_list[count]
-        file_name = im.split('/')[-1]
-        count += 1
-        img = io.imread(im, as_grey=as_grey)
-
-        if len(img.shape) > 2 and img.shape[2] == 4:
-            img = img[:, :, :3]
-        if not as_grey:
-            img = img / 255.0
-        img = transform.resize(img, (full_length, full_length))
+def read_img_random(path, file_names, as_gray=False, resize=None):
+    imgs = list()
+    # roman_label = ['I', 'II', 'III', 'IV']
+    print('reading the images:%s' % path)
+    for file_name in file_names:
+        file_path = os.path.join(path, file_name)
+        img = io.imread(file_path, as_gray=as_gray)
+        if resize is not None:
+            img = transform.resize(img, resize, anti_aliasing=True)
+        # io.imsave(file_path, img)
+        if img.shape[-1] != 3 and not as_gray:
+            print(file_path)
         imgs.append(img)
-        labels.append(file_name)
-        if count % 1 == 0:
-            print("\rreading {0}/{1}".format(count, min(total_count, len(file_path_list))), end='')
-    print('\r', end='')
-    return np.asarray(imgs, np.float32), np.asarray(labels, np.str_)
+
+    return np.asarray(imgs, np.float32)
 
 
 def next_batch(dataset, start_point, batch_size):
@@ -323,121 +313,161 @@ def write_csv(img_name_list, cat_list, path='csv/ae_{0}.csv'.format(cluster_numb
         writer.writerows(lines)
 
 
-train_data, train_label = read_img_random(train_path, train_image_count, as_grey=(channel == 1))
-if len(train_data.shape) == 3:
-    d2_train_data = train_data.reshape(
-        (train_data.shape[0], train_data.shape[1] * train_data.shape[2]))
-elif len(train_data.shape) == 4:
-    d2_train_data = train_data.reshape(
-        (train_data.shape[0], train_data.shape[1] * train_data.shape[2] * train_data.shape[3]))
-else:
-    d2_train_data = []
-print(d2_train_data)
-n_samples = len(d2_train_data)
-batch_size = int(n_samples / 1)
+def read_csv(path):
+    # init result
+    file_names = list()
+    styles = list()
+    manual_features = list()
 
-network_architecture = \
-    dict(n_hidden_recog_1=256,  # 1st layer encoder neurons
-         n_hidden_recog_2=64,  # 2nd layer encoder neurons
-         n_hidden_gener_1=64,  # 1st layer decoder neurons
-         n_hidden_gener_2=256,  # 2nd layer decoder neurons
-         n_input=full_length ** 2 * channel,  # MNIST data input (img shape: 28*28)
-         n_z=16)  # dimensionality of latent space
+    with open(path, 'r') as csvfile:
+        reader = csv.reader(csvfile, delimiter='\t')
+        # skip header
+        num_cols = len(next(reader))
 
-vae = train(network_architecture, d2_train_data,
-            learning_rate=0.0001,
-            batch_size=batch_size,
-            training_epochs=3000,
-            display_step=500)
+        # assign file into sets
+        for row in reader:
+            filename = row[0]
+            if len(filename) == 0:
+                break
+            file_names.append(filename)
+            style = int(row[1])
+            styles.append(style)
+            manual_features.append(list())
+            for i in range(2, num_cols):
+                manual_features[-1].append(int(row[i]))
 
-test_sample = next_batch(d2_train_data, 0, batch_size)
-x_reconstruct = vae.reconstruct(test_sample)
+    return np.asarray(file_names, np.str_), np.asarray(styles, np.int8), np.asarray(manual_features, np.int8)
 
-plt.figure(figsize=(16, 20))
-for i in range(5):
-    plt.subplot(5, 2, 2 * i + 1)
-    plt.imshow(test_sample[i].reshape(display_length, display_length, channel), vmin=0, vmax=1,
-               cmap="gray")
-    plt.title("Test input")
-    plt.colorbar()
-    plt.subplot(5, 2, 2 * i + 2)
-    plt.imshow(x_reconstruct[i].reshape(display_length, display_length, channel), vmin=0, vmax=1,
-               cmap="gray")
-    plt.title("Reconstruction")
-    plt.colorbar()
-plt.tight_layout()
-plt.show()
 
-x_sample = next_batch(d2_train_data, 0, batch_size)
-z_mu = vae.transform(x_sample)
+if __name__ == '__main__':
+    csv_file_path = r'C:\Users\bunny\Desktop\Database_Revised.txt'
+    file_name_list, style_list, manual_features_list = read_csv(csv_file_path)
+    index_list = [list(style_list)[:i + 1].count(style_list[i]) for i in range(len(style_list))]
 
-vae.sess.close()
+    image_root = r'C:\Users\bunny\Desktop\svd_test_500/'
+    raw_pixel_list = read_img_random(image_root, file_name_list, resize=(full_length, full_length))
+    if len(raw_pixel_list.shape) == 3:
+        raw_pixel_1d_list = raw_pixel_list.reshape(
+            (raw_pixel_list.shape[0], raw_pixel_list.shape[1] * raw_pixel_list.shape[2]))
+    elif len(raw_pixel_list.shape) == 4:
+        raw_pixel_1d_list = raw_pixel_list.reshape(
+            (raw_pixel_list.shape[0], raw_pixel_list.shape[1] * raw_pixel_list.shape[2] * raw_pixel_list.shape[3]))
+    else:
+        raw_pixel_1d_list = []
+    print(raw_pixel_1d_list.shape)
+    n_samples = len(raw_pixel_1d_list)
+    batch_size = int(n_samples / 1)
 
-row = len(z_mu)
-col = len(z_mu[0])
-print("[", row, "x", col, "] sized input")
+    network_architecture = \
+        dict(n_hidden_recog_1=256,  # 1st layer encoder neurons
+             n_hidden_recog_2=64,  # 2nd layer encoder neurons
+             n_hidden_gener_1=64,  # 1st layer decoder neurons
+             n_hidden_gener_2=256,  # 2nd layer decoder neurons
+             n_input=full_length ** 2 * channel,  # MNIST data input (img shape: 28*28)
+             n_z=32)  # dimensionality of latent space
 
-predictions = k_means(z_mu)
+    vae = train(network_architecture, raw_pixel_1d_list,
+                learning_rate=0.0001,
+                batch_size=batch_size,
+                training_epochs=10000,
+                display_step=100)
 
-index = 0
-result_cat_list = []
-for i in predictions:
-    # print("[", z_mu[index], "] -> cluster_", i['cluster_idx'])
-    result_cat_list.append(i['cluster_idx'])
-    index = index + 1
+    test_sample = next_batch(raw_pixel_1d_list, 0, batch_size)
+    x_reconstruct = vae.reconstruct(test_sample)
 
-classify_images(train_path, cluster_number, result_cat_list, train_label)
-for k in range(len(result_cat_list)):
-    print(str(result_cat_list[k] + 1) + '\t' + train_label[k])
-write_csv(train_label, [x + 1 for x in result_cat_list])
+    plt.figure(figsize=(16, 20))
+    for i in range(5):
+        plt.subplot(5, 2, 2 * i + 1)
+        plt.imshow(test_sample[i].reshape(display_length, display_length, channel), vmin=0, vmax=1,
+                   cmap="gray")
+        plt.title("Test input")
+        plt.colorbar()
+        plt.subplot(5, 2, 2 * i + 2)
+        plt.imshow(x_reconstruct[i].reshape(display_length, display_length, channel), vmin=0, vmax=1,
+                   cmap="gray")
+        plt.title("Reconstruction")
+        plt.colorbar()
+    plt.tight_layout()
+    plt.show()
 
-import sys
-sys.exit("CUT")
-network_architecture = \
-    dict(n_hidden_recog_1=256,  # 1st layer encoder neurons
-         n_hidden_recog_2=64,  # 2nd layer encoder neurons
-         n_hidden_gener_1=64,  # 1st layer decoder neurons
-         n_hidden_gener_2=256,  # 2nd layer decoder neurons
-         n_input=full_length ** 2 * channel,  # MNIST data input (img shape: 28*28)
-         n_z=2)  # dimensionality of latent space
+    x_sample = next_batch(raw_pixel_1d_list, 0, batch_size)
+    z_mu = vae.transform(x_sample)
 
-vae_2d = train(network_architecture, d2_train_data, batch_size=batch_size, training_epochs=2000)
+    vae.sess.close()
 
-x_sample = next_batch(d2_train_data, 0, 75)
-z_mu = vae_2d.transform(x_sample)
-predictions = k_means(z_mu)
+    row = len(z_mu)
+    col = len(z_mu[0])
+    print("[", row, "x", col, "] sized input")
 
-index = 0
-result_cat_list = []
-for i in predictions:
-    # print("[", d2_train_data[index], "] -> cluster_", i['cluster_idx'])
-    result_cat_list.append(i['cluster_idx'])
-    index = index + 1
+    sio.savemat(file_name='../mat/autoencoder.mat',
+                mdict={'feature_matrix': z_mu,
+                       'label': style_list,
+                       'file_name': file_name_list,
+                       'index': index_list})
 
-print(len(result_cat_list))
-
-plt.figure(figsize=(16, 12))
-plt.scatter(z_mu[:, 0], z_mu[:, 1], c=result_cat_list)
-plt.colorbar()
-plt.grid()
-plt.show()
-
-nx = ny = 20
-x_values = np.linspace(-20, 20, nx)
-y_values = np.linspace(-20, 25, ny)
-
-canvas = np.empty((display_length * ny, display_length * nx, channel))
-for i, yi in enumerate(x_values):
-    for j, xi in enumerate(y_values):
-        z_mu = np.array([[xi, yi]] * vae.batch_size)
-        x_mean = vae_2d.generate(z_mu)
-        # print(x_mean)
-        canvas[(nx - i - 1) * display_length:(nx - i) * display_length, j * display_length:(j + 1) * display_length] = \
-            x_mean[0].reshape(display_length, display_length, channel)
-
-vae_2d.sess.close()
-plt.figure(figsize=(16, 20))
-Xi, Yi = np.meshgrid(x_values, y_values)
-plt.imshow(canvas, origin="upper", cmap="gray")
-plt.tight_layout()
-plt.show()
+    # predictions = k_means(z_mu)
+    #
+    # index = 0
+    # result_cat_list = []
+    # for i in predictions:
+    #     # print("[", z_mu[index], "] -> cluster_", i['cluster_idx'])
+    #     result_cat_list.append(i['cluster_idx'])
+    #     index = index + 1
+    #
+    # classify_images(train_path, cluster_number, result_cat_list, style_list)
+    # for k in range(len(result_cat_list)):
+    #     print(str(result_cat_list[k] + 1) + '\t' + style_list[k])
+    # write_csv(style_list, [x + 1 for x in result_cat_list])
+    #
+    # import sys
+    #
+    # sys.exit("CUT")
+    # network_architecture = \
+    #     dict(n_hidden_recog_1=256,  # 1st layer encoder neurons
+    #          n_hidden_recog_2=64,  # 2nd layer encoder neurons
+    #          n_hidden_gener_1=64,  # 1st layer decoder neurons
+    #          n_hidden_gener_2=256,  # 2nd layer decoder neurons
+    #          n_input=full_length ** 2 * channel,  # MNIST data input (img shape: 28*28)
+    #          n_z=2)  # dimensionality of latent space
+    #
+    # vae_2d = train(network_architecture, raw_pixel_1d_list, batch_size=batch_size, training_epochs=2000)
+    #
+    # x_sample = next_batch(raw_pixel_1d_list, 0, 75)
+    # z_mu = vae_2d.transform(x_sample)
+    # predictions = k_means(z_mu)
+    #
+    # index = 0
+    # result_cat_list = []
+    # for i in predictions:
+    #     # print("[", d2_train_data[index], "] -> cluster_", i['cluster_idx'])
+    #     result_cat_list.append(i['cluster_idx'])
+    #     index = index + 1
+    #
+    # print(len(result_cat_list))
+    #
+    # plt.figure(figsize=(16, 12))
+    # plt.scatter(z_mu[:, 0], z_mu[:, 1], c=result_cat_list)
+    # plt.colorbar()
+    # plt.grid()
+    # plt.show()
+    #
+    # nx = ny = 20
+    # x_values = np.linspace(-20, 20, nx)
+    # y_values = np.linspace(-20, 25, ny)
+    #
+    # canvas = np.empty((display_length * ny, display_length * nx, channel))
+    # for i, yi in enumerate(x_values):
+    #     for j, xi in enumerate(y_values):
+    #         z_mu = np.array([[xi, yi]] * vae.batch_size)
+    #         x_mean = vae_2d.generate(z_mu)
+    #         # print(x_mean)
+    #         canvas[(nx - i - 1) * display_length:(nx - i) * display_length,
+    #         j * display_length:(j + 1) * display_length] = \
+    #             x_mean[0].reshape(display_length, display_length, channel)
+    #
+    # vae_2d.sess.close()
+    # plt.figure(figsize=(16, 20))
+    # Xi, Yi = np.meshgrid(x_values, y_values)
+    # plt.imshow(canvas, origin="upper", cmap="gray")
+    # plt.tight_layout()
+    # plt.show()
