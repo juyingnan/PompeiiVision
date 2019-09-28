@@ -136,28 +136,34 @@ def find_route(ref_sets, match_sets, match_seq, ref_set_title='ref', matched_set
         for j in range(len(matched_sets)):
             matched_set = matched_sets[j]
             if sankeymatic_output_format:
-                print('{0}-{1} [{4}] {2}-{3}'.format(ref_set_title, write_roman(i + 1),
-                                                     matched_set_title, write_roman(j + 1),
+                print('{0}-{1} [{4}] {2}-{3}'.format(ref_set_title.capitalize(), write_roman(i + 1),
+                                                     matched_set_title.capitalize(), write_roman(j + 1),
                                                      count_match(ref_set, matched_set))) \
                     if count_match(ref_set, matched_set) > 0 else None
             else:
-                print('{0}:{1} => {2}:{3}'.format(ref_set_title, i, matched_set_title, j),
+                print('{0}:{1} => {2}:{3}'.format(ref_set_title.capitalize(), i, matched_set_title.capitalize(), j),
                       '{0} / {1}'.format(count_match(ref_set, matched_set), ref_length_list[i]))
-    print(":Human-I #A5C9E1 >>\n:Human-II #FFCC9F>>\n:Human-III #ABD9AB>>\n:Human-IV #E77E7F >>")
+    print(":{0}-I #A5C9E1 >>\n:{0}-II #FFCC9F>>\n:{0}-III #ABD9AB>>\n:{0}-IV #E77E7F >>"
+          .format(ref_set_title.capitalize()))
+    print(":{0}-I #A5C9E1 <<\n:{0}-II #FFCC9F<<\n:{0}-III #ABD9AB<<\n:{0}-IV #E77E7F <<"
+          .format(matched_set_title.capitalize()))
     print('from {0} => {1}:'.format(matched_set_title, ref_set_title))
     for i in range(len(matched_sets)):
         matched_set = matched_sets[i]
         for j in range(len(ref_sets)):
             ref_set = ref_sets[j]
             if sankeymatic_output_format:
-                print('{0}-{1} [{4}] {2}-{3}'.format(matched_set_title, write_roman(i + 1),
-                                                     ref_set_title, write_roman(j + 1),
+                print('{0}-{1} [{4}] {2}-{3}'.format(matched_set_title.capitalize(), write_roman(i + 1),
+                                                     ref_set_title.capitalize(), write_roman(j + 1),
                                                      count_match(ref_set, matched_set))) \
                     if count_match(ref_set, matched_set) > 0 else None
             else:
-                print('{0}:{1} => {2}:{3}'.format(matched_set_title, i, ref_set_title, j),
+                print('{0}:{1} => {2}:{3}'.format(matched_set_title.capitalize(), i, ref_set_title.capitalize(), j),
                       '{0} / {1}'.format(count_match(ref_set, matched_set), matched_length_list[i]))
-    print(":Human-I #A5C9E1 <<\n:Human-II #FFCC9F<<\n:Human-III #ABD9AB<<\n:Human-IV #E77E7F<<")
+    print(":{0}-I #A5C9E1 <<\n:{0}-II #FFCC9F<<\n:{0}-III #ABD9AB<<\n:{0}-IV #E77E7F <<"
+          .format(ref_set_title.capitalize()))
+    print(":{0}-I #A5C9E1 >>\n:{0}-II #FFCC9F>>\n:{0}-III #ABD9AB>>\n:{0}-IV #E77E7F >>"
+          .format(matched_set_title.capitalize()))
 
     # matching matrix printing
     head = ''
