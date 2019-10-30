@@ -3,6 +3,8 @@ import sys
 from collections import OrderedDict
 import itertools
 
+cluster_number = 4
+
 
 def read_csv(path, delimiter='\t'):
     cat = 4
@@ -30,6 +32,30 @@ def read_csv(path, delimiter='\t'):
             return result[0]
         else:
             return result
+
+
+def write_new_csv(new_match, path, delimiter='\t'):
+    file_column = list()
+    cluster_column = list()
+    with open(path, 'r') as csvfile:
+        reader = csv.reader(csvfile, delimiter=delimiter)
+        # skip header
+        num_cols = len(next(reader))
+
+        # assign file into sets
+        for row in reader:
+            file_column.append(row[0])
+            cluster_column.append(int(row[1]) - 1)
+
+    new_clustering_column = [new_match.index(c) + 1 for c in cluster_column]
+
+    with open(path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow((["NAME", "KMEANS_CAT{0}".format(cluster_number)]))
+        lines = []
+        for i in range(len(file_column)):
+            lines.append([file_column[i], new_clustering_column[i]])
+        writer.writerows(lines)
 
 
 def write_roman(number):
@@ -242,6 +268,8 @@ if __name__ == '__main__':
 
     # find best match
     human_clustering_match = find_best_match_cats(human_cat, clustering_cat, repeat=False)
+
+    write_new_csv(new_match=human_clustering_match, path=csv_path, delimiter='\t')
 
     # find route from best match
     print('****************')
