@@ -4,6 +4,7 @@ import csv
 import numpy as np
 from scipy import io as sio
 from skimage import io, transform
+from skimage.color import gray2rgb
 
 import feature_test
 from classification import k_means_test
@@ -40,13 +41,17 @@ def read_img_random(path, file_names, as_gray=False, resize=None):
     # roman_label = ['I', 'II', 'III', 'IV']
     print('reading the images:%s' % path)
     for file_name in file_names:
-        file_path = os.path.join(path, file_name)
+        file_path = file_name
         img = io.imread(file_path, as_gray=as_gray)
         if resize is not None:
             img = transform.resize(img, resize, anti_aliasing=True)
         # io.imsave(file_path, img)
         if img.shape[-1] != 3 and not as_gray:
             print(file_path)
+            if img.shape[-1] == 4:
+                img = img[:, :, :3]
+            else:
+                img = gray2rgb(img)
         imgs.append(img)
 
     return np.asarray(imgs, np.float32)
@@ -99,13 +104,36 @@ if __name__ == '__main__':
     h = w
     c = 3
 
-    csv_file_path = r'C:\Users\bunny\Desktop\Database_Revised.txt'
-    file_name_list, style_list, manual_features_list = read_csv(csv_file_path)
+    # csv_file_path = r'C:\Users\bunny\Desktop\Database_Revised.txt'
+    # file_name_list, style_list, manual_features_list = read_csv(csv_file_path)
+
+    file_root_dir = r'C:\Users\bunny\Desktop\_ROMAN_WALL_PAINTINGS\_Roman_Wall_Paintings'
+
+    file_name_list = []
+    img_full_path_list = []
+    relative_path_list = []
+    style_list = []
+    label_list = []
+    manual_features_list = []
+    i = -1
+    for (dirpath, dirnames, filenames) in os.walk(os.path.join(file_root_dir, file_root_dir)):
+        img_full_path_list += [os.path.join(dirpath, file) for file in filenames
+                               if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+        file_name_list += [file for file in filenames
+                           if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+        relative_path_list += [f'{dirpath.split(os.path.sep)[-1]}/{file}' for file in filenames
+                               if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+        style_list += [dirpath.split(os.path.sep)[-1] for file in filenames
+                       if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+        label_list += [i for file in filenames
+                       if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+        i += 1
+
     index_list = [list(style_list)[:i + 1].count(style_list[i]) for i in range(len(style_list))]
 
-    image_root = r'C:\Users\bunny\Desktop\svd_test_raw/'
-    for is_gray in [False]:
-        raw_pixel_list = read_img_random(image_root, file_name_list, as_gray=is_gray, resize=(h, w))
+    image_root = r'C:\Users\bunny\Desktop\_ROMAN_WALL_PAINTINGS\_Roman_Wall_Paintings'
+    for is_gray in [False, True]:
+        raw_pixel_list = read_img_random(image_root, img_full_path_list, as_gray=is_gray, resize=(h, w))
 
         np.seterr(all='ignore')
 
@@ -125,38 +153,50 @@ if __name__ == '__main__':
                                                            sift=True)
         print('key point mat size: ', key_point_feature_list.shape)
 
-        sio.savemat(file_name='../mat/auto_features{}.mat'.format('_g' if is_gray else ''),
+        save_to_dir = '../mat/20201101/'
+
+        sio.savemat(file_name=os.path.join(save_to_dir, f'auto_features{"_g" if is_gray else ""}.mat'),
                     mdict={'feature_matrix': np.concatenate((shape_index_feature_list, key_point_feature_list), axis=1),
-                           'label': style_list,
+                           'label': label_list,
+                           'style': style_list,
                            'file_name': file_name_list,
+                           'relative_file_name': relative_path_list,
                            'index': index_list})
-        sio.savemat(file_name='../mat/manual_features{}.mat'.format('_g' if is_gray else ''),
-                    mdict={'feature_matrix': manual_features_list,
-                           'label': style_list,
-                           'file_name': file_name_list,
-                           'index': index_list})
-        sio.savemat(file_name='../mat/auto+manual_features{}.mat'.format('_g' if is_gray else ''),
-                    mdict={'feature_matrix': np.concatenate(
-                        (shape_index_feature_list, key_point_feature_list, manual_features_list), axis=1),
-                        'label': style_list,
-                        'file_name': file_name_list,
-                        'index': index_list})
+        # sio.savemat(file_name=os.path.join(save_to_dir, f'manual_features{"_g" if is_gray else ""}.mat'),
+        #             mdict={'feature_matrix': manual_features_list,
+        # 'label': label_list,
+        # 'style': style_list,
+        # 'file_name': file_name_list,
+        # 'relative_file_name': relative_path_list,
+        # 'index': index_list})
+        # sio.savemat(file_name=os.path.join(save_to_dir, f'auto+manual_features{"_g" if is_gray else ""}.mat'),
+        #             mdict={'feature_matrix': np.concatenate(
+        #                 (shape_index_feature_list, key_point_feature_list, manual_features_list), axis=1),
+        # 'label': label_list,
+        # 'style': style_list,
+        # 'file_name': file_name_list,
+        # 'relative_file_name': relative_path_list,
+        # 'index': index_list})
 
         for edge in [20, 50]:
             w = h = edge
-            raw_pixel_list = read_img_random(image_root, file_name_list, as_gray=is_gray, resize=(h, w))
+            raw_pixel_list = read_img_random(image_root, img_full_path_list, as_gray=is_gray, resize=(h, w))
             d2_raw_pixel_list = k_means_test.get_raw_pixel_features(raw_pixel_list)
             print('raw mat size: ', d2_raw_pixel_list.shape)
-            sio.savemat(file_name='../mat/raw_{}{}.mat'.format(w, '_g' if is_gray else ''),
+            sio.savemat(file_name=os.path.join(save_to_dir, f'raw_{w}{"_g" if is_gray else ""}.mat'),
                         mdict={'feature_matrix': d2_raw_pixel_list,
-                               'label': style_list,
+                               'label': label_list,
+                               'style': style_list,
                                'file_name': file_name_list,
+                               'relative_file_name': relative_path_list,
                                'index': index_list})
-            sio.savemat(file_name='../mat/raw_{}+manual_features{}.mat'.format(w, '_g' if is_gray else ''),
-                        mdict={'feature_matrix': np.concatenate((d2_raw_pixel_list, manual_features_list), axis=1),
-                               'label': style_list,
-                               'file_name': file_name_list,
-                               'index': index_list})
+            # sio.savemat(file_name=os.path.join(save_to_dir, f'raw+manual_features_{w}{"_g" if is_gray else ""}.mat'),
+            #             mdict={'feature_matrix': np.concatenate((d2_raw_pixel_list, manual_features_list), axis=1),
+            # 'label': label_list,
+            # 'style': style_list,
+            # 'file_name': file_name_list,
+            # 'relative_file_name': relative_path_list,
+            # 'index': index_list})
 
             #
             # save_raw_mat(raw_pixel_list, train_label, train_file_paths, train_indexes,

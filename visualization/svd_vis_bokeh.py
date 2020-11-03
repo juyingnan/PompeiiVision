@@ -60,17 +60,20 @@ def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_a
     result_plot.yaxis.axis_label = y_axis_title
     for label in roman_label:
         index_list = []
+        legend_label = ''
         for i in range(len(source.data['style_label'])):
             if source.data['style_label'][i] == label:
                 index_list.append(i)
+                legend_label = source.data['legend_label'][i]
         view = CDSView(source=source, filters=[IndexFilter(index_list)])
         result_plot.scatter(x_data, y_data, source=source, fill_alpha=0.4, size=12,
-                            marker=factor_mark('style_label', markers, roman_label),
-                            color=factor_cmap('style_label', 'Category10_8', roman_label),
+                            # marker=factor_mark('style_label', markers, roman_label),
+                            marker='circle',
+                            color=factor_cmap('style_label', 'Category20_16', roman_label),
                             # muted_color=factor_cmap(label['real_label_list'], 'Category10_8',
                             #                         label['standard_label_list']),
                             muted_alpha=0.1, view=view,
-                            legend=label)
+                            legend_label=legend_label)
     result_plot.legend.click_policy = "hide"
 
     # highlight x y axes
@@ -108,7 +111,7 @@ custom_tooltip = """
     </div>
 """
 
-input_file_name = 'shape_index_10'
+input_file_name = 'raw_50'
 axis_threshold = 5
 default_x_index = '1'
 default_y_index = '2'
@@ -116,11 +119,11 @@ default_y_index = '2'
 if len(sys.argv) >= 2:
     input_file_name = sys.argv[1]
 
-mat_path = '../mat/' + input_file_name + '.mat'
+mat_path = '../mat/20201101/' + input_file_name + '.mat'
 digits = sio.loadmat(mat_path)
-roman_label = ['I', 'II', 'III', 'IV']
+roman_label = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI']
 markers = ['hex', 'triangle', 'circle', 'cross', 'diamond', 'square', 'x', 'inverted_triangle']
-output_file('result/svd_' + input_file_name + '.html')
+output_file('result//20201101_svd_' + input_file_name + '.html')
 
 # plot tools
 tools_list = "pan," \
@@ -136,8 +139,8 @@ tools_list = "pan," \
 vline = Span(location=0, dimension='height', line_color='black', line_width=2)
 hline = Span(location=0, dimension='width', line_color='black', line_width=2)
 
-X, labels = digits.get('feature_matrix'), digits.get('label')[0]
-file_names, indexes = digits.get('file_name'), digits.get('index')[0]
+X, labels, styles = digits.get('feature_matrix'), digits.get('label')[0], digits.get('style')
+file_names, indexes = digits.get('relative_file_name'), digits.get('index')[0]
 n_samples, n_features = X.shape
 
 # feature projection calculation
@@ -233,6 +236,7 @@ sample_data = {'current_projection_x': xx_sample_projection_list[0],
                'current_correlation_x': xx_sample_correlation_list[0],
                'current_correlation_y': xx_sample_correlation_list[1],
                'style_label': [roman_label[labels[i]] for i in range(len(labels))],
+               'legend_label': styles,
                'file_name_label': file_names,
                'file_path_label': ["images/" + file_name for file_name in file_names],
                'index_label': indexes,
