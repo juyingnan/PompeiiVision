@@ -12,9 +12,7 @@ from classification import k_means_test
 
 def read_csv(path):
     # init result
-    file_names = list()
-    styles = list()
-    manual_features = list()
+    manual_features_dict = {}
 
     with open(path, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter='\t')
@@ -26,14 +24,20 @@ def read_csv(path):
             filename = row[0]
             if len(filename) == 0:
                 break
-            file_names.append(filename)
-            style = int(row[1])
-            styles.append(style)
-            manual_features.append(list())
+            location = row[1]
+            manual_features = []
             for i in range(2, num_cols):
-                manual_features[-1].append(int(row[i]))
-
-    return np.asarray(file_names, np.str_), np.asarray(styles, np.int8), np.asarray(manual_features, np.int8)
+                if len(row[i]) > 0:
+                    manual_features.append(int(row[i]))
+                else:
+                    manual_features.append(-1)
+            if filename not in manual_features_dict:
+                manual_features_dict[filename] = {
+                    "location": location,
+                    "manual_features": manual_features
+                }
+    return manual_features_dict
+    # return np.asarray(file_names, np.str_), np.asarray(styles, np.int8), np.asarray(manual_features, np.int8)
 
 
 def read_img_random(path, file_names, as_gray=False, resize=None):
@@ -44,7 +48,7 @@ def read_img_random(path, file_names, as_gray=False, resize=None):
         file_path = file_name
         img = io.imread(file_path, as_gray=as_gray)
         if resize is not None:
-            img = transform.resize(img, resize, anti_aliasing=True)
+            img = transform.resize(img, resize, anti_aliasing=False)
         # io.imsave(file_path, img)
         if img.shape[-1] != 3 and not as_gray:
             print(file_path)
@@ -107,16 +111,19 @@ if __name__ == '__main__':
     # csv_file_path = r'C:\Users\bunny\Desktop\Database_Revised.txt'
     # file_name_list, style_list, manual_features_list = read_csv(csv_file_path)
 
-    file_root_dir = r'C:\Users\bunny\Desktop\_ROMAN_WALL_PAINTINGS\_Roman_Wall_Paintings'
-
     file_name_list = []
     img_full_path_list = []
     relative_path_list = []
     style_list = []
     label_list = []
+    location_list = []
     manual_features_list = []
     i = -1
-    for (dirpath, dirnames, filenames) in os.walk(os.path.join(file_root_dir, file_root_dir)):
+
+    image_root = r'C:\Users\bunny\Desktop\_Reorganized_Data'
+    csv_path = r'C:\Users\bunny\Desktop\manual.csv'
+    manual_features_all = read_csv(csv_path)
+    for (dirpath, dirnames, filenames) in os.walk(image_root):
         img_full_path_list += [os.path.join(dirpath, file) for file in filenames
                                if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
         file_name_list += [file for file in filenames
@@ -131,8 +138,16 @@ if __name__ == '__main__':
 
     index_list = [list(style_list)[:i + 1].count(style_list[i]) for i in range(len(style_list))]
 
-    image_root = r'C:\Users\bunny\Desktop\_ROMAN_WALL_PAINTINGS\_Roman_Wall_Paintings'
-    for is_gray in [False, True]:
+    # manual features
+    for filename in file_name_list:
+        filename_prefix = os.path.splitext(filename)[0]
+        if filename_prefix in manual_features_all:
+            manual_features_list.append(manual_features_all[filename_prefix]["manual_features"])
+            location_list.append(manual_features_all[filename_prefix]["location"])
+        else:
+            print(filename)
+
+    for is_gray in [False]:
         raw_pixel_list = read_img_random(image_root, img_full_path_list, as_gray=is_gray, resize=(h, w))
 
         np.seterr(all='ignore')
@@ -153,22 +168,24 @@ if __name__ == '__main__':
                                                            sift=True)
         print('key point mat size: ', key_point_feature_list.shape)
 
-        save_to_dir = '../mat/20201101/'
+        save_to_dir = '../mat/20210308/'
 
         sio.savemat(file_name=os.path.join(save_to_dir, f'auto_features{"_g" if is_gray else ""}.mat'),
                     mdict={'feature_matrix': np.concatenate((shape_index_feature_list, key_point_feature_list), axis=1),
                            'label': label_list,
                            'style': style_list,
+                           'location': location_list,
                            'file_name': file_name_list,
                            'relative_file_name': relative_path_list,
                            'index': index_list})
-        # sio.savemat(file_name=os.path.join(save_to_dir, f'manual_features{"_g" if is_gray else ""}.mat'),
-        #             mdict={'feature_matrix': manual_features_list,
-        # 'label': label_list,
-        # 'style': style_list,
-        # 'file_name': file_name_list,
-        # 'relative_file_name': relative_path_list,
-        # 'index': index_list})
+        sio.savemat(file_name=os.path.join(save_to_dir, f'manual_features{"_g" if is_gray else ""}.mat'),
+                    mdict={'feature_matrix': manual_features_list,
+                           'label': label_list,
+                           'style': style_list,
+                           'location': location_list,
+                           'file_name': file_name_list,
+                           'relative_file_name': relative_path_list,
+                           'index': index_list})
         # sio.savemat(file_name=os.path.join(save_to_dir, f'auto+manual_features{"_g" if is_gray else ""}.mat'),
         #             mdict={'feature_matrix': np.concatenate(
         #                 (shape_index_feature_list, key_point_feature_list, manual_features_list), axis=1),
@@ -187,6 +204,7 @@ if __name__ == '__main__':
                         mdict={'feature_matrix': d2_raw_pixel_list,
                                'label': label_list,
                                'style': style_list,
+                               'location': location_list,
                                'file_name': file_name_list,
                                'relative_file_name': relative_path_list,
                                'index': index_list})
