@@ -501,13 +501,13 @@ def loop_run(data):
 
 
 if __name__ == '__main__':
-    input_file_name = 'all_features'
+    input_file_name = 'manual_features'
     if len(sys.argv) >= 2:
         input_file_name = sys.argv[1]
-    mat_path = '../mat/' + input_file_name + '.mat'
+    mat_path = '../mat/20210308/' + input_file_name + '.mat'
     digits = sio.loadmat(mat_path)
     X, labels = digits.get('feature_matrix'), digits.get('label')[0]
-    file_names, indexes = digits.get('file_name'), digits.get('index')[0]
+    file_names, indexes = digits.get('relative_file_name'), digits.get('index')[0]
     n_samples, n_features = X.shape
     unique_names = list()
     for style, index in zip(labels, indexes):
@@ -515,10 +515,10 @@ if __name__ == '__main__':
     # K-Means
     # loop_run(train_data)
 
-    k_means_clustering(X, unique_names, path='../csv/kmeans_{0}_{1}.csv'.format(cluster_number, input_file_name))
+    k_means_clustering(X, unique_names, path='../csv/20210308/kmeans_{0}_{1}.csv'.format(cluster_number, input_file_name))
     hierarchical_clustering(X, unique_names,
-                            path='../csv/hierarchical_{0}_{1}.csv'.format(cluster_number, input_file_name))
-    write_csv(unique_names, labels + 1, path='../csv/human_{}.csv'.format(cluster_number))
+                            path='../csv/20210308/hierarchical_{0}_{1}.csv'.format(cluster_number, input_file_name))
+    write_csv(unique_names, labels + 1, path='../csv/20210308/human_{}.csv'.format(cluster_number))
 
     # test
     # for t in range(100):
