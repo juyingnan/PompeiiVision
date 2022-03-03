@@ -1,7 +1,7 @@
 # reference: https://github.com/DmitryUlyanov/Multicore-TSNE
 
 import matplotlib.pyplot as plt
-from MulticoreTSNE import MulticoreTSNE as TSNE
+# from MulticoreTSNE import MulticoreTSNE as TSNE
 from scipy import io
 
 mat_path = 'mat/raw_250.mat'
