@@ -36,8 +36,8 @@ def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_a
                 legend_label = source.data['legend_label'][i]
         view = CDSView(source=source, filters=[IndexFilter(index_list)])
         result_plot.scatter(x_data, y_data, source=source, fill_alpha=0.4, size=12,
-                            # marker=factor_mark('style_label', markers, roman_label),
-                            color=factor_cmap('style_label', 'Category20_16', roman_label),
+                            marker=factor_mark('style_label', markers, roman_label),
+                            color=factor_cmap('style_label', 'Category10_8', roman_label),
                             muted_alpha=0.1, view=view,
                             legend_label=legend_label)
     result_plot.legend.click_policy = "hide"
@@ -61,6 +61,9 @@ custom_tooltip = """
             <span style="font-size: 15px; color: #966;">[@index_label]</span>
         </div>
         <div>
+            <span style="font-size: 15px; color: #966;">@location_label</span>
+        </div>
+        <div>
             <span style="font-size: 10px; color: #696;">@file_name_label</span>
         </div>
     </div>
@@ -72,7 +75,8 @@ custom_tooltip = """
 # if len(sys.argv) >= 2:
 #     input_file_name = sys.argv[1]
 
-mat_root_dir = '../mat/20201101'
+date = '20220303'
+mat_root_dir = f'../mat/{date}'
 mat_file_names = os.listdir(mat_root_dir)
 N = len(mat_file_names)
 cols = round(math.sqrt(N))
@@ -80,7 +84,7 @@ print('N: {}, cols: {}'.format(N, cols))
 
 roman_label = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI']
 markers = ['hex', 'triangle', 'circle', 'cross', 'diamond', 'square', 'x', 'inverted_triangle']
-output_file('result/20201101_tsne_all.html')
+output_file(f'result/{date}_tsne_all.html')
 
 # plot tools
 tools_list = "pan," \
@@ -100,7 +104,10 @@ grid_list = list()
 for mat_name in mat_file_names:
     mat_path = os.path.join(mat_root_dir, mat_name)
     digits = sio.loadmat(mat_path)
-    X, labels, styles = digits.get('feature_matrix'), digits.get('label')[0], digits.get('style')
+    X, labels, styles, locations = digits.get('feature_matrix'), \
+                                   digits.get('label')[0], \
+                                   digits.get('style'), \
+                                   digits.get('location')
     file_names, indexes = digits.get('relative_file_name'), digits.get('index')[0]
     n_samples, n_features = X.shape
 
@@ -117,6 +124,7 @@ for mat_name in mat_file_names:
             'Y': X_tsne.T[1],
             'style_label': [roman_label[labels[i]] for i in range(len(labels))],
             'legend_label': styles,
+            'location_label': locations,
             'file_name_label': file_names,
             'file_path_label': ["images/" + file_name for file_name in file_names],
             'index_label': indexes,
