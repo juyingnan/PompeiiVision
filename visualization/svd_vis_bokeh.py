@@ -64,16 +64,15 @@ def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_a
         for i in range(len(source.data['style_label'])):
             if source.data['style_label'][i] == label:
                 index_list.append(i)
-                legend_label = source.data['legend_label'][i]
+                # legend_label = source.data['legend_label'][i]
         view = CDSView(source=source, filters=[IndexFilter(index_list)])
         result_plot.scatter(x_data, y_data, source=source, fill_alpha=0.4, size=12,
-                            # marker=factor_mark('style_label', markers, roman_label),
-                            marker='circle',
-                            color=factor_cmap('style_label', 'Category20_16', roman_label),
+                            marker=factor_mark('style_label', markers, roman_label),
+                            color=factor_cmap('style_label', 'Category10_8', roman_label),
                             # muted_color=factor_cmap(label['real_label_list'], 'Category10_8',
                             #                         label['standard_label_list']),
                             muted_alpha=0.1, view=view,
-                            legend_label=legend_label)
+                            legend_label=label)
     result_plot.legend.click_policy = "hide"
 
     # highlight x y axes
@@ -106,12 +105,16 @@ custom_tooltip = """
             <span style="font-size: 15px; color: #966;">[@index_label]</span>
         </div>
         <div>
+            <span style="font-size: 15px; color: #966;">@location_label</span>
+        </div>
+        <div>
             <span style="font-size: 10px; color: #696;">@file_name_label</span>
         </div>
     </div>
 """
 
-input_file_name = 'raw_50'
+feature_types = ['raw_20', 'raw_50', 'auto_features', 'manual_features']
+input_file_name = feature_types[3]
 axis_threshold = 5
 default_x_index = '1'
 default_y_index = '2'
@@ -119,11 +122,12 @@ default_y_index = '2'
 if len(sys.argv) >= 2:
     input_file_name = sys.argv[1]
 
-mat_path = '../mat/20201101/' + input_file_name + '.mat'
+date = '20220303'
+mat_path = f'../mat/{date}/' + input_file_name + '.mat'
 digits = sio.loadmat(mat_path)
-roman_label = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI']
+roman_label = ['I', 'II', 'III', 'IV']
 markers = ['hex', 'triangle', 'circle', 'cross', 'diamond', 'square', 'x', 'inverted_triangle']
-output_file('result//20201101_svd_' + input_file_name + '.html')
+output_file(f'result/{date}_svd_' + input_file_name + '.html')
 
 # plot tools
 tools_list = "pan," \
@@ -139,7 +143,10 @@ tools_list = "pan," \
 vline = Span(location=0, dimension='height', line_color='black', line_width=2)
 hline = Span(location=0, dimension='width', line_color='black', line_width=2)
 
-X, labels, styles = digits.get('feature_matrix'), digits.get('label')[0], digits.get('style')
+X, labels, styles, locations = digits.get('feature_matrix'), \
+                               digits.get('label')[0], \
+                               digits.get('style'), \
+                               digits.get('location')
 file_names, indexes = digits.get('relative_file_name'), digits.get('index')[0]
 n_samples, n_features = X.shape
 
@@ -237,6 +244,7 @@ sample_data = {'current_projection_x': xx_sample_projection_list[0],
                'current_correlation_y': xx_sample_correlation_list[1],
                'style_label': [roman_label[labels[i]] for i in range(len(labels))],
                'legend_label': styles,
+               'location_label': locations,
                'file_name_label': file_names,
                'file_path_label': ["images/" + file_name for file_name in file_names],
                'index_label': indexes,
