@@ -15,7 +15,7 @@ def read_csv(path):
     manual_features_dict = {}
 
     with open(path, 'r') as csvfile:
-        reader = csv.reader(csvfile, delimiter='\t')
+        reader = csv.reader(csvfile, delimiter=',')
         # skip header
         num_cols = len(next(reader))
 
@@ -25,14 +25,16 @@ def read_csv(path):
             if len(filename) == 0:
                 break
             location = row[1]
+            style = int(row[2])
             manual_features = []
-            for i in range(2, num_cols):
+            for i in range(3, num_cols):
                 if len(row[i]) > 0:
                     manual_features.append(int(row[i]))
                 else:
                     manual_features.append(-1)
             if filename not in manual_features_dict:
                 manual_features_dict[filename] = {
+                    'style': style,
                     "location": location,
                     "manual_features": manual_features
                 }
@@ -51,7 +53,7 @@ def read_img_random(path, file_names, as_gray=False, resize=None):
             img = transform.resize(img, resize, anti_aliasing=False)
         # io.imsave(file_path, img)
         if img.shape[-1] != 3 and not as_gray:
-            print(file_path)
+            print(file_path, "shape 4->3")
             if img.shape[-1] == 4:
                 img = img[:, :, :3]
             else:
@@ -107,6 +109,7 @@ if __name__ == '__main__':
     w = 500
     h = w
     c = 3
+    img_postfix_list = ('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')
 
     # csv_file_path = r'C:\Users\bunny\Desktop\Database_Revised.txt'
     # file_name_list, style_list, manual_features_list = read_csv(csv_file_path)
@@ -125,27 +128,32 @@ if __name__ == '__main__':
     manual_features_all = read_csv(csv_path)
     for (dirpath, dirnames, filenames) in os.walk(image_root):
         img_full_path_list += [os.path.join(dirpath, file) for file in filenames
-                               if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+                               if (file.lower().endswith(img_postfix_list))]
         file_name_list += [file for file in filenames
-                           if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+                           if (file.lower().endswith(img_postfix_list))]
         relative_path_list += [f'{dirpath.split(os.path.sep)[-1]}/{file}' for file in filenames
-                               if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+                               if (file.lower().endswith(img_postfix_list))]
         style_list += [dirpath.split(os.path.sep)[-1] for file in filenames
-                       if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+                       if (file.lower().endswith(img_postfix_list))]
         label_list += [i for file in filenames
-                       if (file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif')))]
+                       if (file.lower().endswith(img_postfix_list))]
         i += 1
 
     index_list = [list(style_list)[:i + 1].count(style_list[i]) for i in range(len(style_list))]
 
     # manual features
-    for filename in file_name_list:
+    for i in range(len(file_name_list)):
+        filename = file_name_list[i]
+        style = int(style_list[i])
         filename_prefix = os.path.splitext(filename)[0]
         if filename_prefix in manual_features_all:
+            if style != manual_features_all[filename_prefix]["style"]:
+                print(filename, 'style not match', style, manual_features_all[filename_prefix]["style"])
+                continue
             manual_features_list.append(manual_features_all[filename_prefix]["manual_features"])
             location_list.append(manual_features_all[filename_prefix]["location"])
         else:
-            print(filename)
+            print(filename, 'not exist in table')
 
     for is_gray in [False]:
         raw_pixel_list = read_img_random(image_root, img_full_path_list, as_gray=is_gray, resize=(h, w))
@@ -168,7 +176,7 @@ if __name__ == '__main__':
                                                            sift=True)
         print('key point mat size: ', key_point_feature_list.shape)
 
-        save_to_dir = '../mat/20210308/'
+        save_to_dir = '../mat/20220303/'
 
         sio.savemat(file_name=os.path.join(save_to_dir, f'auto_features{"_g" if is_gray else ""}.mat'),
                     mdict={'feature_matrix': np.concatenate((shape_index_feature_list, key_point_feature_list), axis=1),
