@@ -11,6 +11,8 @@ from classification import k_means_test
 
 
 def read_csv(path):
+    """ read label/features from csv file """
+
     # init result
     manual_features_dict = {}
 
@@ -21,12 +23,17 @@ def read_csv(path):
 
         # assign file into sets
         for row in reader:
+            # col 0 - file name
             filename = row[0]
             if len(filename) == 0:
                 break
+
+            # col 1 - location
             location = row[1]
+            # col 2 - style
             style = int(row[2])
             manual_features = []
+            # col 3~ - features
             for i in range(3, num_cols):
                 if len(row[i]) > 0:
                     manual_features.append(int(row[i]))
@@ -42,7 +49,8 @@ def read_csv(path):
     # return np.asarray(file_names, np.str_), np.asarray(styles, np.int8), np.asarray(manual_features, np.int8)
 
 
-def read_img_random(path, file_names, as_gray=False, resize=None):
+def read_img(path, file_names, as_gray=False, resize=None):
+    """ read images from folder """
     imgs = list()
     # roman_label = ['I', 'II', 'III', 'IV']
     print('reading the images:%s' % path)
@@ -125,7 +133,11 @@ if __name__ == '__main__':
 
     image_root = r'C:\Users\bunny\Desktop\_Reorganized_Data'
     csv_path = r'C:\Users\bunny\Desktop\manual.csv'
+
+    # read manual features from csv
     manual_features_all = read_csv(csv_path)
+
+    # get info from image folder
     for (dirpath, dirnames, filenames) in os.walk(image_root):
         img_full_path_list += [os.path.join(dirpath, file) for file in filenames
                                if (file.lower().endswith(img_postfix_list))]
@@ -156,7 +168,8 @@ if __name__ == '__main__':
             print(filename, 'not exist in table')
 
     for is_gray in [False]:
-        raw_pixel_list = read_img_random(image_root, img_full_path_list, as_gray=is_gray, resize=(h, w))
+        # get image pixels
+        raw_pixel_list = read_img(image_root, img_full_path_list, as_gray=is_gray, resize=(h, w))
 
         np.seterr(all='ignore')
 
@@ -168,8 +181,11 @@ if __name__ == '__main__':
         #     save_all_feature_mat(raw_pixel_list, train_label, train_file_paths, train_indexes,
         #                          file_name='../mat/all_feature.mat')
 
+        # get shape index feature
         shape_index_feature_list = feature_test.get_shape_index_features(raw_pixel_list, size=10)
         print('shape index mat size: ', shape_index_feature_list.shape)
+
+        # get key point feature
         key_point_feature_list = k_means_test.get_features(raw_pixel_list,
                                                            whole_image_sample=True, frame_sample=False,
                                                            global_color=False, composition=False, segment_color=False,
@@ -178,6 +194,7 @@ if __name__ == '__main__':
 
         save_to_dir = '../mat/20220303/'
 
+        # save features to mat file
         sio.savemat(file_name=os.path.join(save_to_dir, f'auto_features{"_g" if is_gray else ""}.mat'),
                     mdict={'feature_matrix': np.concatenate((shape_index_feature_list, key_point_feature_list), axis=1),
                            'label': label_list,
@@ -203,9 +220,10 @@ if __name__ == '__main__':
         # 'relative_file_name': relative_path_list,
         # 'index': index_list})
 
+        # extract raw pixel features
         for edge in [20, 50]:
             w = h = edge
-            raw_pixel_list = read_img_random(image_root, img_full_path_list, as_gray=is_gray, resize=(h, w))
+            raw_pixel_list = read_img(image_root, img_full_path_list, as_gray=is_gray, resize=(h, w))
             d2_raw_pixel_list = k_means_test.get_raw_pixel_features(raw_pixel_list)
             print('raw mat size: ', d2_raw_pixel_list.shape)
             sio.savemat(file_name=os.path.join(save_to_dir, f'raw_{w}{"_g" if is_gray else ""}.mat'),

@@ -10,7 +10,13 @@ import sys
 
 
 def show_simple_bar(title, x_axis_label, y_axis_label, source, x, y):
-    # Create the blank plot
+    """ Tool def for generating bar graph
+    title: title of the grapg
+    x_axis_label, y_axis_label: X/Y axis label
+    source: source data frame
+    x, y: X/Y data for visualization
+    """
+
     result_plot = figure(title=title,
                          x_axis_label=x_axis_label,
                          y_axis_label=y_axis_label,
@@ -24,6 +30,7 @@ def show_simple_bar(title, x_axis_label, y_axis_label, source, x, y):
 
 
 def generate_feature_list():
+    """ Tool def for combining all the auto generated features """
     result = []
     append_feature(result, 'Global_color: average_hue_saturation', 3)
     append_feature(result, 'Global_color: hue_distribution', 20)
@@ -45,6 +52,12 @@ def append_feature(result_list, feature_name, feature_count):
 
 
 def create_feature_scatter(x_data, y_data, source, title='', x_axis_title='', y_axis_title=''):
+    """ Tool def for generating scatter graph
+    title: title of the grapg
+    x_axis_title, y_axis_label: X/Y axis title
+    source: source data frame
+    x_data, y_data: X/Y data for visualization
+    """
     result_plot = figure(title=title, tools=tools_list)
     result_plot.xaxis.axis_label = x_axis_title
     result_plot.yaxis.axis_label = y_axis_title
@@ -55,6 +68,12 @@ def create_feature_scatter(x_data, y_data, source, title='', x_axis_title='', y_
 
 
 def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_axis_title=''):
+    """ Tool def for generating scatter graph
+    title: title of the grapg
+    x_axis_title, y_axis_label: X/Y axis title
+    source: source data frame
+    x_data, y_data: X/Y data for visualization
+    """
     result_plot = figure(title=title, tools=tools_list, tooltips=custom_tooltip)
     result_plot.xaxis.axis_label = x_axis_title
     result_plot.yaxis.axis_label = y_axis_title
@@ -80,7 +99,7 @@ def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_a
 
     return result_plot
 
-
+# Data changing when selecting different eigenvectors from drop down menu
 code = """
     var index = labels[cb_obj.value];
     console.log(index);
@@ -92,6 +111,7 @@ code = """
     source.change.emit();
     """
 
+# Tooltip definition
 custom_tooltip = """
     <div>
         <div>
@@ -113,6 +133,9 @@ custom_tooltip = """
     </div>
 """
 
+# raw_20/50: raw pixels from 20x20 and 50x50
+# auto_features: auto generated/extracted image features
+# manual_features: manual labeled features
 feature_types = ['raw_20', 'raw_50', 'auto_features', 'manual_features']
 input_file_name = feature_types[3]
 axis_threshold = 5
@@ -143,6 +166,7 @@ tools_list = "pan," \
 vline = Span(location=0, dimension='height', line_color='black', line_width=2)
 hline = Span(location=0, dimension='width', line_color='black', line_width=2)
 
+# read data
 X, labels, styles, locations = digits.get('feature_matrix'), \
                                digits.get('label')[0], \
                                digits.get('style'), \
@@ -156,7 +180,7 @@ xx_feature_correlation_list = list()
 U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=False)  # u: mxm, s: mx1, v:nxn/1440x1440
 del U
 
-# eigen values vis
+# eigen values visualization
 eigen_source = ColumnDataSource(data=dict(x=np.arange(len(s)), y=s, ))
 eigen_plot = show_simple_bar(title='Eigen Values',
                              x_axis_label="Eigen index",
@@ -184,11 +208,10 @@ feature_data = {'current_projection_x': xx_feature_projection_list[0],
                 'current_correlation_x': xx_feature_correlation_list[0],
                 'current_correlation_y': xx_feature_correlation_list[1],
                 }
-# if 'feature' in input_file_name:
-#     feature_data[]
+
 feature_source = ColumnDataSource(data=feature_data)
 
-# feature vis
+# feature visualization
 feature_left = create_feature_scatter(x_data="current_projection_x", y_data="current_projection_y",
                                       source=feature_source,
                                       title="features projection",
@@ -200,7 +223,7 @@ feature_right = create_feature_scatter(x_data="current_correlation_x", y_data="c
                                        x_axis_title='Correlation on {}'.format(default_x_index),
                                        y_axis_title='Correlation on {}'.format(default_y_index))
 
-# controls
+# UI controls definition
 feature_selection_dict = {}
 for j in range(axis_threshold):
     feature_selection_dict[str(j + 1)] = j
@@ -224,6 +247,7 @@ feature_controls = column(feature_axis_x_select, feature_axis_y_select)
 # SAMPLE
 xx_sample_projection_list = list()
 xx_sample_correlation_list = list()
+
 # sample projection calculation
 U, s, Vh = np.linalg.svd(X, full_matrices=False)
 for axis_index in range(axis_threshold):
@@ -251,7 +275,7 @@ sample_data = {'current_projection_x': xx_sample_projection_list[0],
                }
 sample_source = ColumnDataSource(data=sample_data)
 
-# sample vis
+# sample visualization
 sample_plot_list = list()
 sample_plot_list.append(
     create_sample_scatter(x_data="current_projection_x", y_data="current_projection_y", source=sample_source,
@@ -262,7 +286,7 @@ sample_plot_list.append(
                           title="samples correlation", x_axis_title='Correlation on {}'.format(default_x_index),
                           y_axis_title='Correlation on {}'.format(default_y_index)))
 
-# controls
+# UI controls definition
 sample_axis_x_select = Select(value=default_x_index, title='X-axis', options=sorted(feature_selection_dict.keys()))
 sample_axis_y_select = Select(value=default_y_index, title='Y-axis', options=sorted(feature_selection_dict.keys()))
 

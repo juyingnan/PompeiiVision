@@ -10,7 +10,13 @@ import os
 
 
 def show_simple_bar(title, x_axis_label, y_axis_label, source, x, y):
-    # Create the blank plot
+    """ Tool def for generating bar graph
+    title: title of the grapg
+    x_axis_label, y_axis_label: X/Y axis label
+    source: source data frame
+    x, y: X/Y data for visualization
+    """
+
     result_plot = figure(title=title,
                          x_axis_label=x_axis_label,
                          y_axis_label=y_axis_label,
@@ -24,6 +30,12 @@ def show_simple_bar(title, x_axis_label, y_axis_label, source, x, y):
 
 
 def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_axis_title=''):
+    """ Tool def for generating scatter graph
+    title: title of the grapg
+    x_axis_title, y_axis_label: X/Y axis title
+    source: source data frame
+    x_data, y_data: X/Y data for visualization
+    """
     result_plot = figure(title=title, tools=tools_list, tooltips=custom_tooltip)
     result_plot.xaxis.axis_label = x_axis_title
     result_plot.yaxis.axis_label = y_axis_title
@@ -47,7 +59,7 @@ def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_a
 
     return result_plot
 
-
+# Tooltip definition
 custom_tooltip = """
     <div>
         <div>
