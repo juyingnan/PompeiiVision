@@ -15,7 +15,7 @@ The visualization is based on the feature data generated from
 
 So far we generate 4 types of features:
 - Auto features: auto generated image geatures, including shape index feature and key point feature (SIFT)
-- Manual features: read from csv files
+- Manual features: read from csv file (/csv/manual.csv)
 - 20x20 raw pixels
 - 50x50 raw pixels
 
