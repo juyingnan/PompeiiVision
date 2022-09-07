@@ -6,7 +6,29 @@ from bokeh.plotting import figure
 from bokeh.transform import factor_mark, factor_cmap
 from scipy import io as sio
 from sklearn import preprocessing
+from sklearn.manifold import TSNE
+from umap import UMAP
 import sys
+
+
+def cal_tsne(feature_mat, n=2):
+    print("tsne input shape:", feature_mat.shape)
+    X = feature_mat.reshape(feature_mat.shape[0], -1)
+    # n_samples, n_features = X.shape
+
+    '''t-SNE'''
+    tsne = TSNE(n_components=n, init='random', random_state=42)
+    return tsne.fit_transform(X)
+
+
+def cal_umap(feature_mat, n=2):
+    print("umap input shape:", feature_mat.shape)
+    X = feature_mat.reshape(feature_mat.shape[0], -1)
+    # n_samples, n_features = X.shape
+
+    '''UMAP'''
+    umap_2d = UMAP(n_components=n, init='random', random_state=42, n_neighbors=100)
+    return umap_2d.fit_transform(X)
 
 
 def show_simple_bar(title, x_axis_label, y_axis_label, source, x, y):
@@ -99,6 +121,7 @@ def create_sample_scatter(x_data, y_data, source, title='', x_axis_title='', y_a
 
     return result_plot
 
+
 # Data changing when selecting different eigenvectors from drop down menu
 code = """
     var index = labels[cb_obj.value];
@@ -137,7 +160,7 @@ custom_tooltip = """
 # auto_features: auto generated/extracted image features
 # manual_features: manual labeled features
 feature_types = ['raw_20', 'raw_50', 'auto_features', 'manual_features']
-input_file_name = feature_types[3]
+input_file_name = feature_types[0]
 axis_threshold = 5
 default_x_index = '1'
 default_y_index = '2'
@@ -304,8 +327,34 @@ sample_axis_y_select.js_on_change('value',
                                            code=code))
 sample_controls = column(sample_axis_x_select, sample_axis_y_select)
 
-p = gridplot([[eigen_plot],
-              # [feature_left, feature_right, feature_controls],
-              [sample_plot_list[0], sample_plot_list[1], sample_controls]])
+# add tsne and umap as reference
+tsne_coor = cal_tsne(X, n=2)
+umap_coor = cal_umap(X, n=2)
+
+temp_data = {'current_projection_x': tsne_coor[:, 0],
+             'current_projection_y': tsne_coor[:, 1],
+             'current_correlation_x': umap_coor[:, 0],
+             'current_correlation_y': umap_coor[:, 1],
+             'style_label': [roman_label[labels[i]] for i in range(len(labels))],
+             'legend_label': styles,
+             'location_label': locations,
+             'file_name_label': file_names,
+             'file_path_label': ["images/" + file_name for file_name in file_names],
+             'index_label': indexes,
+             }
+temp_source = ColumnDataSource(data=temp_data)
+sample_plot_list.append(
+    create_sample_scatter(x_data="current_projection_x", y_data="current_projection_y", source=temp_source,
+                          title="t-SNE 2D", x_axis_title='', y_axis_title=''))
+sample_plot_list.append(
+    create_sample_scatter(x_data="current_correlation_x", y_data="current_correlation_y", source=temp_source,
+                          title="UMAP 2D", x_axis_title='', y_axis_title=''))
+
+p = gridplot([
+    [eigen_plot],
+    # [feature_left, feature_right, feature_controls],
+    [sample_plot_list[0], sample_plot_list[1], sample_controls],
+    [sample_plot_list[2], sample_plot_list[3]]
+])
 
 show(p)
