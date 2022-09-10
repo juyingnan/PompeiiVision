@@ -159,8 +159,8 @@ custom_tooltip = """
 # raw_20/50: raw pixels from 20x20 and 50x50
 # auto_features: auto generated/extracted image features
 # manual_features: manual labeled features
-feature_types = ['raw_20', 'raw_50', 'auto_features', 'manual_features']
-input_file_name = feature_types[0]
+feature_types = ['raw_20', 'raw_50', 'auto_features', 'manual_features', 'auto_manual_features']
+input_file_name = feature_types[4]
 axis_threshold = 5
 default_x_index = '1'
 default_y_index = '2'
