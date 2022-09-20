@@ -164,6 +164,7 @@ input_file_name = feature_types[4]
 axis_threshold = 5
 default_x_index = '1'
 default_y_index = '2'
+image_filter = "all"
 
 if len(sys.argv) >= 2:
     input_file_name = sys.argv[1]
@@ -173,7 +174,12 @@ mat_path = f'../mat/{date}/' + input_file_name + '.mat'
 digits = sio.loadmat(mat_path)
 roman_label = ['I', 'II', 'III', 'IV']
 markers = ['hex', 'triangle', 'circle', 'cross', 'diamond', 'square', 'x', 'inverted_triangle']
-output_file(f'result/{date}_svd_' + input_file_name + '.html')
+output_path = f'result/{date}_svd_' + input_file_name + '.html'
+
+if len(sys.argv) >= 3:
+    image_filter = sys.argv[2]
+    output_path = output_path.replace('.html', f'_{image_filter}.html')
+output_file(output_path)
 
 # plot tools
 tools_list = "pan," \
@@ -195,6 +201,21 @@ X, labels, styles, locations = digits.get('feature_matrix'), \
                                digits.get('style'), \
                                digits.get('location')
 file_names, indexes = digits.get('relative_file_name'), digits.get('index')[0]
+
+# location filter
+if image_filter != "all":
+    location_filter = np.char.strip(np.char.lower(locations)) == 'pompeii'
+    if not any(location_filter) == True:
+        print("no location found: exit")
+        exit()
+    X = X[location_filter]
+    labels = labels[location_filter]
+    styles = styles[location_filter]
+    locations = locations[location_filter]
+    file_names = file_names[location_filter]
+    indexes = indexes[location_filter]
+    print(f"Filtered locations at {image_filter}, {len(X)} images found")
+
 n_samples, n_features = X.shape
 
 # feature projection calculation
