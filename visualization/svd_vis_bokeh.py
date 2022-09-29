@@ -44,7 +44,7 @@ def show_simple_bar(title, x_axis_label, y_axis_label, source, x, y):
                          y_axis_label=y_axis_label,
                          tools=tools_list, tooltips="@%s: @% s" % (x, y))
 
-    result_plot.vbar(x=x, top=y, width=0.5, alpha=0.4, source=source)  # , legend=x, )
+    result_plot.vbar(x=x, top=y, width=0.5, alpha=0.4, color='color', source=source)  # , legend=x, )
 
     result_plot.xgrid.grid_line_color = None
     result_plot.y_range.start = 0
@@ -225,10 +225,27 @@ U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=False)  # u: mxm, s: mx1, 
 del U
 
 # eigen values visualization
-eigen_source = ColumnDataSource(data=dict(x=np.arange(len(s)), y=s, ))
-eigen_plot = show_simple_bar(title='Eigen Values',
-                             x_axis_label="Eigen index",
-                             y_axis_label="Eigen Value",
+
+# changed s value to The relative variances (s_k)^2 / SUM_i (s_i)^2
+# get sigma i si 2
+s_sq_sum = 0
+for value in s:
+    s_sq_sum += value ** 2
+# cal relative variances
+s_rel_var = np.zeros(s.shape)
+bar_color = []
+for i in range(len(s)):
+    s_rel_var[i] = s[i] ** 2 / s_sq_sum
+    if sum(s_rel_var[:i]) <= 0.95:  # upper is i to prevent current value be calculated
+        bar_color.append('blue')
+    else:
+        bar_color.append('red')
+bar_color = np.array(bar_color)
+
+eigen_source = ColumnDataSource(data=dict(x=np.arange(len(s)), y=s_rel_var, color=bar_color))
+eigen_plot = show_simple_bar(title=f"Eigen Values (95% n={np.count_nonzero(bar_color == 'blue')})",
+                             x_axis_label="Eigen index \n[=feature_count]",
+                             y_axis_label="Eigen Value relative variances \n[=(s_k)^2 / SUM_i (s_i)^2]",
                              source=eigen_source,
                              x='x',
                              y='y'
