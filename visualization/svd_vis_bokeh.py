@@ -160,7 +160,7 @@ custom_tooltip = """
 # auto_features: auto generated/extracted image features
 # manual_features: manual labeled features
 feature_types = ['raw_20', 'raw_50', 'auto_features', 'manual_features', 'auto_manual_features']
-input_file_name = feature_types[4]
+input_file_name = feature_types[2]
 axis_threshold = 5
 default_x_index = '1'
 default_y_index = '2'
@@ -222,6 +222,19 @@ n_samples, n_features = X.shape
 xx_feature_projection_list = list()
 xx_feature_correlation_list = list()
 U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=False)  # u: mxm, s: mx1, v:nxn/1440x1440
+
+# # test reconstruction
+# recons = np.dot(U * s, Vh)
+# print(np.allclose(X.transpose(), recons))
+# s[1] = 0
+# recons = np.dot(U * s, Vh)
+# print(np.allclose(X.transpose(), recons))
+# diff = X.transpose() - recons
+# ssq = np.sum(X.transpose() ** 2, axis=1)
+# print(f"original sqrt sum: {ssq}")
+# ssq = np.sum(diff ** 2, axis=1)
+# print(f"diff sqrt sum: {ssq}")
+
 del U
 
 # eigen values visualization
