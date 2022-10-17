@@ -234,6 +234,13 @@ U, s, Vh = np.linalg.svd(X.transpose(), full_matrices=False)  # u: mxm, s: mx1, 
 # print(f"original sqrt sum: {ssq}")
 # ssq = np.sum(diff ** 2, axis=1)
 # print(f"diff sqrt sum: {ssq}")
+for row in U:
+    print(row)
+
+ut = U.transpose()
+print()
+for row in ut:
+    print(row)
 
 del U
 
